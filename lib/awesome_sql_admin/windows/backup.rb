@@ -8,8 +8,9 @@ class AwesomeSqlAdmin::Windows::WinBackup
 
   # The constructor of WinBackup.
   def initialize(win_main)
-    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/win_dbexport.glade")
-    @gui.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new
+    @gui.add("#{File.dirname(__FILE__)}/ui/win_dbexport.ui")
+    @gui.connect_signals { |handler| method(handler) }
     @window = @gui[:window]
     winsetting = GtkSettingsWindow.new(@window, "win_backup")
 
@@ -50,13 +51,13 @@ class AwesomeSqlAdmin::Windows::WinBackup
     # Prompting for a directory to place the backup-file in and register events. At the last showing the window.
     filename = dialog_saveFile::newDialog()
     if filename
-      @ExportToFile(filename)
+      ExportToFile(filename)
     end
   end
 
   # Export the choosen tables to the choosen file and closes the window.
   def ExportToFile(filename)
-    win_status = WinStatus.new(["window_parent" => @window))
+    win_status = WinStatus.new("window_parent" => @window)
     win_status.SetStatus(0, _("Preparing the backup-process..."), true)
 
     # Get the format.
@@ -126,7 +127,7 @@ class AwesomeSqlAdmin::Windows::WinBackup
     countt_points = count(tables)
     tables.each do |tha_table|
       if tables_back[tha_table.get("name")]
-        win_status.SetStatus(0, _("Counting") . " (" . tha_table.get("name") . ")...", true)
+        win_status.SetStatus(0, "#{_("Counting")} (#{tha_table.get("name")})...", true)
 
         f_cd = query("SELECT COUNT(*) AS count FROM " . tha_table.get("name"))
         d_cd = f_cd.fetch()
@@ -136,7 +137,7 @@ class AwesomeSqlAdmin::Windows::WinBackup
     end
 
     # Backup of the database-structure (tables etc.)
-    win_status.SetStatus(0, _("Executing backup") . " (0/" . count_points . ")", true)
+    win_status.SetStatus(0, "#{_("Executing backup")} (0/#{count_points})", true)
     if struc == true
       tables.each do |tha_table|
         if tables_back[tha_table.get("name")]
@@ -144,25 +145,25 @@ class AwesomeSqlAdmin::Windows::WinBackup
           columns = tha_table.getColumns()
           indexes = tha_table.getIndexes()
 
-          colarr = [)
+          colarr = []
           columns.each do |col|
             colarr[] = col.data
           end
 
-          sql .= ob_tables.createTable(tha_table.get("name"), colarr, ["returnsql" => true)) . "\n"
+          sql << ob_tables.createTable(tha_table.get("name"), colarr, ["returnsql" => true)) . "\n"
 
           if indexes
             indexes.each do |index|
-              sql .= ob_indexes.addIndex(tha_table, index.getColumns(), null, ["returnsql" => true)) . "\n"
+              sql << ob_indexes.addIndex(tha_table, index.getColumns(), null, ["returnsql" => true)) . "\n"
             end
           end
 
           # Flushing SQL to the file.
-          @BackupFlush(fp, mode, sql)
+          BackupFlush(fp, mode, sql)
 
           # Updating status-window.
-          count_points++
-          win_status.SetStatus(count_points / countt_points, _("Executing backup") . " (" . count_points . "/" . countt_points . ")")
+          count_points += 1
+          win_status.SetStatus(count_points / countt_points, "#{_("Executing backup")} (#{count_points}/#{countt_points})")
         end
       end
     end
@@ -172,23 +173,23 @@ class AwesomeSqlAdmin::Windows::WinBackup
       tables.each do |tha_table|
         if tables_back[tha_table.get("name")]
           columns = tha_table.getColumns()
-          win_status.SetStatus(perc, _("Executing backup") . " (" . count_points . "/" . countt_points . ") (Querying " . tha_table.get("name") . "...).", true)
+          win_status.SetStatus(perc, "#{_("Executing backup")} (#{count_points}/#{countt_points}) (Querying #{tha_table.get("name")}...).", true)
 
           f_gd = query_unbuffered("SELECT * FROM " . tha_table.get("name"))
           while(d_gd = f_gd.fetch())
-            sql .= ob_rows.getArrInsertSQL(tha_table.get("name"), d_gd) . "\n"
+            sql << ob_rows.getArrInsertSQL(tha_table.get("name"), d_gd) . "\n"
 
-            @BackupFlush(fp, mode, sql)
-            count_points++
+            BackupFlush(fp, mode, sql)
+            count_points += 1
             perc = count_points / countt_points
-            win_status.SetStatus(perc, _("Executing backup") . " (" . count_points . "/" . countt_points . ") (Reading " . tha_table.get("name") . ").")
+            win_status.SetStatus(perc, "#{_("Executing backup")} (#{count_points}/#{countt_points}) (Reading #{tha_table.get("name")}).")
           end
         end
       end
     end
 
     # Flushing rest of data (there shouldnt be any - just to be safe).
-    @BackupFlush(fp, mode, sql)
+    BackupFlush(fp, mode, sql)
 
     # Closing file-pointer.
     if mode == "gz"
@@ -200,7 +201,7 @@ class AwesomeSqlAdmin::Windows::WinBackup
     # Closing status-window and reset the operation.
     win_status.CloseWindow()
     msgbox(_("Information"), _("The backup execution has ended, and the backup-file has been written."), "info")
-    @CloseWindow()
+    CloseWindow()
   end
 
   # Flush stuff to the file.

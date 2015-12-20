@@ -14,13 +14,14 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
     @title = title
     @id = id
 
-    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/vbox_dbpage.glade")
-    @gui.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new
+    @gui.add("#{File.dirname(__FILE__)}/ui/vbox_dbpage.ui")
+    @gui.connect_signals { |handler| method(handler) }
 
     vbox_dbpage = @gui[:vbox_dbpage]
     vbox_dbpage.unparent()
 
-    @add(vbox_dbpage)
+    add(vbox_dbpage)
 
     @tv_tables = @gui[:tvTables]
     @tv_tables.get_selection().set_mode(Gtk::SELECTION_MULTIPLE)
@@ -30,9 +31,9 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
         _("Rows")
       ]
     )
-    @tv_tables.get_selection().connect("changed", [self, "TablesClicked"))
-    @tv_tables.drag_source_set(Gdk::BUTTON1_MASK, [["text/plain", 0, 0)), Gdk::ACTION_COPY|Gdk::ACTION_MOVE); # Enables dragging FROM the clist.
-    @tv_tables.connect("drag-data-get", [self, "drag_data_save")); # Setting the dragged data-object.
+    @tv_tables.get_selection().connect("changed", [self, "TablesClicked"])
+    @tv_tables.drag_source_set(Gdk::BUTTON1_MASK, [["text/plain", 0, 0])) # Enables dragging FROM the clist.
+    @tv_tables.connect("drag-data-get", [self, "drag_data_save"]); # Setting the dragged data-object.
     tables_settings = GtkSettingsTreeview.new(@tv_tables, "dbpage_tables")
 
     @tv_columns = @gui[:tvColumns]
@@ -44,9 +45,9 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
         _("Default"),
         _("Primary"),
         _("Auto incr")
-      )
+      ]
     )
-    @tv_columns.get_selection().connect("changed", [get_winMain(), "ColumnsClicked"))
+    @tv_columns.get_selection().connect("changed", [get_winMain(), "ColumnsClicked"])
     columns_settings = GtkSettingsTreeview.new(@tv_columns, "dbpage_columns")
 
     paned_settings = GtkSettingsPaned.new(@gui[:hpanedTablesColumns], "dbpage_tablescolumns")
@@ -55,11 +56,11 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
     treeview_addColumn(@tv_indexes, [
         _("Title"),
         _("Columns")
-      )
+      ]
     )
     index_settings = GtkSettingsTreeview.new(@tv_indexes, "dbpage_indexes")
 
-    @TablesUpdate(); # Fill the treeview with tables.
+    TablesUpdate() # Fill the treeview with tables.
   end
 
   def destroy
@@ -105,11 +106,11 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
           "drop" => _("Drop"),
           "refresh" => _("Refresh"),
           "optimize" => _("Optimize")
-        ),
-        [self, "ClistTablesRightclickMenu")
+        ],
+        [self, "ClistTablesRightclickMenu"]
       )
     elsif event.type == 5 # doubleclick.
-      @ClistTablesRightclickMenu("browse")
+      ClistTablesRightclickMenu("browse")
     end
   end
 
@@ -120,8 +121,8 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
           "add_new" => _("Add columns.new"),
           "add_index" => _("Add index for this column"),
           "drop" => _("Drop column")
-        ),
-        [self, "ClistColumnsRightclickmenu")
+        ],
+        [self, "ClistColumnsRightclickmenu"]
       )
     end
   end
@@ -129,8 +130,8 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
   def on_tvIndexes_button_press_event(selection, event)
     if event.button == 3 # Handels the right-click-event.
       popup = knj_popup.new(
-        ["drop" => _("Drop index")),
-        [self, "ClistIndexRightclickmenu")
+        {"drop" => _("Drop index")},
+        [self, "ClistIndexRightclickmenu"]
       )
     end
   end
@@ -149,7 +150,7 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
     elsif mode == "truncate"
       get_winMain().TableTruncate()
     elsif mode == "refresh"
-      @tablesUpdate()
+      tablesUpdate()
     elsif mode == "optimize"
       get_winMain().tableOptimize()
     end
@@ -188,11 +189,11 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
     @tv_columns.get_model().clear()
     @tv_indexes.get_model().clear()
 
-    table = @getTable()
+    table = getTable()
     if !table
       return null
     end
-    table_ob = @getTable(true)
+    table_ob = getTable(true)
     if !table_ob
       return null
     end
@@ -206,7 +207,7 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
           column.get("default"),
           column.get("primarykey"),
           column.get("autoincr")
-        )
+        ]
       )
     end
 
@@ -214,7 +215,7 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
       self.tv_indexes.get_model().append([
           index.get("name"),
           index.getColText()
-        )
+        ]
       )
     end
 
@@ -222,7 +223,7 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
   end
 
   # Reloads the tables in the treeview.
-  def tablesUpdate(WinStatus win_status = null)
+  def tablesUpdate(win_status = null)
     @tv_columns.get_model().clear()
     @tv_tables.get_model().clear()
 
@@ -233,7 +234,7 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
     tables = @dbconn.tables().getTables()
     count = 0
     countt = count(tables)
-    tables.each do |key => table|
+    tables.each do |key, table|
       if win_status
         count++
         win_status.setStatus(count / countt, sprintf(_("Adding tables to list (%s)."), table.get("name")), true)
@@ -245,7 +246,7 @@ class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
       count_rows = number_format(table.countRows(), 0, ",", ".")
       count_columns = count(table.getColumns())
 
-      @tv_tables.get_model().append([table.get("name"), count_columns, count_rows))
+      @tv_tables.get_model().append([table.get("name"), count_columns, count_rows])
     end
 
     if win_status

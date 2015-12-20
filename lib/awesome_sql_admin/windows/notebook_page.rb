@@ -7,26 +7,26 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
     @title = title
 
     lab_title = GtkLabel.new(title)
-    @connect("button-press-event", [self, "ItemClicked"))
-    @add(lab_title)
+    connect("button-press-event", [self, "ItemClicked"])
+    add(lab_title)
     lab_title.show()
 
     # Enable draggin on the GtkEventBox().
-    @drag_source_set(Gdk::BUTTON1_MASK, [["text/plain", 0, 0)), Gdk::ACTION_COPY|Gdk::ACTION_MOVE)
-    @connect("drag-data-get", [self, "DragDataSave"))
+    drag_source_set(Gdk::BUTTON1_MASK, [["text/plain", 0, 0]]), Gdk::ACTION_COPY|Gdk::ACTION_MOVE)
+    connect("drag-data-get", [self, "DragDataSave"])
 
     # Enable dragging the the GtkNotebook()-items.
-    @drag_dest_set(Gtk::DEST_DEFAULT_ALL, [["text/plain", 0, 0)), 0|1|2|3|4|5)
-    @connect("drag-data-received", [self, "OnDrop"))
+    drag_dest_set(Gtk::DEST_DEFAULT_ALL, [["text/plain", 0, 0]])
+    connect("drag-data-received", [self, "OnDrop"])
   end
 
   def DragDataSave(widget, context, data, info, time)
     data.set_text(
       serialize(
-        [
+        {
           "dbpage_id" => self.dbpage_id,
           "type" => "nbpage"
-        )
+        }
       )
     )
   end
@@ -37,7 +37,7 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
     if is_numeric(data)
       dbpage = get_winMain().getDBPage(data)
       tables_sel = treeview_getSelection(dbpage.tv_tables)
-      tables = [)
+      tables = []
       tables_sel.each do |table_sel|
         tables[] = dbpage.dbconn.getTable(table_sel[0])
       end
@@ -45,13 +45,13 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
       @ondrop_knj_clist = [
         "dbpage" => dbpage,
         "tables" => tables
-      )
+      ]
       pop = knj_popup.new(
-        [
+        {
           "copy" => _("Copy"),
           "move" => _("Move")
-        ),
-        [self, "OnDrop_knj_clist")
+        },
+        [self, "OnDrop_knj_clist"]
       )
     elsif data["type"] == "nbpage"
       dbpage_me = @dbpage
@@ -60,10 +60,10 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
       @ondrop_nbpage = dbpage_dropped
 
       pop = knj_popup.new(
-        [
+        {
           "copy_tables" => _("Copy tables to db")
-        ),
-        [self, "OnDrop_nbpage")
+        },
+        [self, "OnDrop_nbpage"]
       )
     end
   end
@@ -158,7 +158,7 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
         tables.each do |table|
           win_status.setStatus(0, sprintf(_("Reading columns from: %s"), table.get("name")), true)
           columns = table.getColumns()
-          columns_arr = [)
+          columns_arr = []
           columns.each do |column|
             columns_arr[] = column.data
           end
@@ -169,7 +169,7 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
           tables_list = @dbconn.tables().getTables()
           tables_list.each do |value|
             if value.get("name") == table.get("name")
-              raise sprintf(_("The table name: \"%s\", already exists in the database."), table.get("name")))
+              raise sprintf(_("The table name: \"%s\", already exists in the database."), table.get("name"))
             end
           end
 
@@ -193,7 +193,7 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
           f_gd = dbpage.dbconn.select(table.get("name"))
           while(d_gd = f_gd.fetch())
             if conn_from_type == "knjdb_mssql" && conn_to_type == "knjdb_mysql"
-              d_gd.each do |col_name => row_value|
+              d_gd.each do |col_name, row_value|
                 col_ob = newtable.getColumn(col_name)
                 if col_ob.data["type"] == "datetime"
                   # convert the data to a known date-format.
@@ -202,10 +202,10 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
                     d_gd[col_name] = "0000-00-00 00:00:00"
                   elsif preg_match("/^([A-z]{3})\s+([0-9]{1,2})\s+([0-9]{1,4})\s+([0-9:]+)([A-z]{1,2})/", row_value, match)
                     month_no = date_month_str_to_no(strtolower(match[1]))
-                    date_mysql = date[3] . "-" . month_no . "-" . date[2] . " " . date[4]
+                    date_mysql = "#{date[3]}-#{month_no}-#{date[2]} #{date[4]}"
                     d_gd[col_name] = date("Y-m-d H:i:s", strtotime(row_value))
                   else
-                    raise "Could not match the date-value (" . row_value . ").")
+                    raise "Could not match the date-value (#{row_value})."
                   end
                 end
               end
@@ -213,7 +213,7 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
 
             count++
             @dbconn.insert(table.get("name"), d_gd)
-            win_status.setStatus(count / countt, status_copy . " (" . count . "/" . countt . ")")
+            win_status.setStatus(count / countt, "#{status_copy} (#{count}/#{countt})")
           end
 
           @dbconn.insert_autocommit(false); # turn if off and commit the rest.
@@ -221,7 +221,7 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
 
           # Copy indexes.
           table.getIndexes().each do |index|
-            cols = [)
+            cols = []
             index.getColumns().each do |col|
               cols[] = newtable.getColumn(col.get("name"))
             end
@@ -261,8 +261,8 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
           "select_another" => _("Select another database"),
           "truncate_all" => _("Truncate all dbs"),
           "drop_all" => _("Drop all tables")
-        ),
-        [self, "ItemClicked_Activate")
+        ],
+        [self, "ItemClicked_Activate"]
       )
     end
   end
@@ -286,7 +286,7 @@ class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
         get_winMain().dbpage.tablesUpdate()
       end
     else
-      raise "Invalid mode: " . mode)
+      raise "Invalid mode: #{mode}"
     end
   end
 end

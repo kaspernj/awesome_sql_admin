@@ -1,42 +1,38 @@
 # This class controls the main window.
 class AwesomeSqlAdmin::Windows::Main
-  attr_accessor :gui           # Reference to the GladeXML()-object.
-  attr_accessor :window          # Reference to the GtkWindow()-object.
-  attr_accessor :nb_dbs          # Reference to the GtkNotebook()-object which contains the openned database-profiles.
-  attr_accessor :dbs_open_count  # The count of DBPages. This is used to determine their ID's.
-  attr_accessor :dbpage          # The current DBPage, which is being used.
-  attr_accessor :dbconn          # The current DBConn, which is being used.
+  attr_accessor :gui, :window, :nb_dbs, :dbs_open_count, :dbpage, :dbconn
 
   # The constructor. This spawns the GladeXML()-object and sets some variables.
   def initialize
-    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/main.glade")
-    @gui.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new
+    @gui.add("#{File.dirname(__FILE__)}/ui/main.ui")
+    @gui.connect_signals { |handler| method(handler) }
 
     @window = @gui[:window]
     winsetting = GtkSettingsWindow.new(@window, "win_main")
 
     @nb_dbs = @gui[:nbDbs]
-    @nb_dbs.connect_after("switch-page", [self, "ChangeActiveDB"))
+    @nb_dbs.connect_after("switch-page", [self, "ChangeActiveDB"])
 
-    @window.show_all()
+    @window.show_all
   end
 
   # Return a DBPage()-object from the ID.
   def getDBPage(id)
-    return @dbs_open[id]
+    @dbs_open[id]
   end
 
   def SpawnNewDB(title, newdbconn)
     # Spawn a page.new on the main GtkNotebook().
     require_once("gui/class_DBPage.php")
     dbpage = DBPage.new(newdbconn, title, @dbs_open_count)
-    @dbs_open[self.dbs_open_count] = dbpage
+    @dbs_open[dbs_open_count] = dbpage
 
     # Used for dragging for identifying which dbpage the dragged element belong to.
     dbpage.tv_tables.other["dbpage_id"] = @dbs_open_count
 
     # removes the default page, if it is shown.
-    if !self.nb_dbs.default_page_removed
+    unless nb_dbs.default_page_removed
       @nb_dbs.default_page_removed = true
       @nb_dbs.remove_page(0)
     end
@@ -45,7 +41,7 @@ class AwesomeSqlAdmin::Windows::Main
     require_once("gui/class_Notebook_Page.php")
     nb_page = WinMain_Notebook_Page.new(title, dbpage, self)
 
-    pageid = self.nb_dbs.append_page(
+    pageid = nb_dbs.append_page(
       dbpage,
       nb_page
     )
@@ -54,7 +50,7 @@ class AwesomeSqlAdmin::Windows::Main
     dbpage.dbpage_id = @dbs_open_count
 
     # refresh notebook. sets focus on the page.new.
-    @nb_dbs.show_all()
+    @nb_dbs.show_all
     @nb_dbs.set_current_page(pageid)
 
     @dbs_open_count += 1
@@ -62,13 +58,13 @@ class AwesomeSqlAdmin::Windows::Main
 
   # Sets the comfort-variables, when a page.new has been selected.
   def ChangeActiveDB
-    @dbpage = @nb_dbs.get_nth_page(self.nb_dbs.get_current_page())
+    @dbpage = @nb_dbs.get_nth_page(nb_dbs.get_current_page)
 
     # Then we set the main-variables to refelect current page.
-    @tv_tables = @dbpage.get_TVTables()
-    @tv_columns = @dbpage.get_TVColumns()
-    @tv_indexes = @dbpage.get_TVIndexes()
-    @dbconn = @dbpage.get_DBConn()
+    @tv_tables = @dbpage.get_TVTables
+    @tv_columns = @dbpage.get_TVColumns
+    @tv_indexes = @dbpage.get_TVIndexes
+    @dbconn = @dbpage.get_DBConn
   end
 
   # Open a database.new-profile.
@@ -79,17 +75,17 @@ class AwesomeSqlAdmin::Windows::Main
 
   # Close the current database-profile.
   def CloseDatabaseClicked
-    if !self.getDBConn()
+    unless getDBConn
       msgbox(_("Warning"), _("There is no database-connection open at this time."), "warning")
       return null
     end
 
-    @dbpage.destroy()
+    @dbpage.destroy
   end
 
   # Truncates all tabels on all databases.
   def TruncateAllClicked
-    if !self.getDBConn().conn
+    unless getDBConn.conn
       msgbox(_("Warning"), _("You need to open a database, before you can truncate its databases"), "warning")
       return null
     end
@@ -99,18 +95,18 @@ class AwesomeSqlAdmin::Windows::Main
     end
 
     begin
-      dbs = @getDBConn().GetDBs()
+      dbs = getDBConn.GetDBs()
 
       dbs.each do |value|
-        @getDBConn().ChooseDB(value)
-        tables = @getDBConn().GetTables(value)
+        getDBConn.ChooseDB(value)
+        tables = getDBConn.GetTables(value)
 
         tables.each do |table|
-          @getDBConn().TruncateTable(table["name"])
+          getDBConn.TruncateTable(table["name"])
         end
       end
     rescue => e
-      msgbox(_("Warning"), sprintf(_("An error occurred:\n\n%s"), e.getMessage()), "warning")
+      msgbox(_("Warning"), sprintf(_("An error occurred:\n\n%s"), e.getMessage), "warning")
     end
 
     @dbpage.TablesUpdate()
@@ -118,66 +114,60 @@ class AwesomeSqlAdmin::Windows::Main
 
   # Select another database than the default one in the database, if the current type if MySQL, PostgreSQL or whatever.
   def SelectOtherDbClicked(knjdb = null, args = null)
-    if get_class(knjdb) != "knjdb"
-      knjdb = @dbpage.dbconn
-    end
+    knjdb = @dbpage.dbconn if get_class(knjdb) != "knjdb"
 
-    if !is_[args)
-      args = null
-    end
+    args = null unless is_[args]
 
     begin
       require_once("gui/win_databases.php")
       win_dbs = WinDatabases.new(knjdb, args)
     rescue => e
-      msgbox(_("Warning"), e.getMessage(), "warning")
+      msgbox(_("Warning"), e.getMessage, "warning")
     end
   end
 
   # Add a index to the currently selected table and column.
   def IndexAddClicked
-    begin
-      if !self.getDBConn()
-        msgbox(_("Warning"), _("Please open a database before trying to add a index."), "warning")
-        return null
-      end
-
-      table = @getTable()
-      table_ob = @dbconn.getTable(table[0])
-      if !table
-        msgbox(_("Warning"), _("Please select a table and try again."), "warning")
-        return null
-      end
-
-      column = treeview_getSelection(@tv_columns)
-      column_ob = table_ob.getColumn(column[0])
-
-      if !column_ob
-        msgbox(_("Warning"), _("Please select a column to create a index of."), "warning")
-        return null
-      end
-
-      table_ob.addIndex([column_ob))
-
-      @dbpage.TablesClicked()
-      msgbox(_("Information"), _("The index was created with a success."), "info")
-    rescue => e
-      msgbox(_("Warning"), sprintf(_("An error occurred:\n\n%s"), e.getMessage()), "warning")
+    unless getDBConn
+      msgbox(_("Warning"), _("Please open a database before trying to add a index."), "warning")
+      return null
     end
+
+    table = getTable
+    table_ob = @dbconn.getTable(table[0])
+    unless table
+      msgbox(_("Warning"), _("Please select a table and try again."), "warning")
+      return null
+    end
+
+    column = treeview_getSelection(@tv_columns)
+    column_ob = table_ob.getColumn(column[0])
+
+    unless column_ob
+      msgbox(_("Warning"), _("Please select a column to create a index of."), "warning")
+      return null
+    end
+
+    table_ob.addIndex([column_ob])
+
+    @dbpage.TablesClicked()
+    msgbox(_("Information"), _("The index was created with a success."), "info")
+  rescue => e
+    msgbox(_("Warning"), sprintf(_("An error occurred:\n\n%s"), e.getMessage), "warning")
   end
 
   # Drop the selected index.
   def IndexDropClicked
     begin
-      if !self.getDBConn()
+      unless getDBConn
         msgbox(_("Warning"), _("Please open a database before trying to drop a index."), "warning")
         return null
       end
 
       index = treeview_getSelection(@tv_indexes)
-      table = @getTable(true)
+      table = getTable(true)
 
-      if !index
+      unless index
         msgbox(_("Warning"), _("Please select a index to drop and try again."), "warning")
         return null
       end
@@ -185,14 +175,14 @@ class AwesomeSqlAdmin::Windows::Main
 
       table.removeIndex(index_ob)
     rescue => e
-      knj_msgbox::error_exc(e)
+      knj_msgbox.error_exc(e)
     end
 
     @dbpage.TablesClicked()
   end
 
   def RunSQLClicked
-    if !self.getDBConn().conn
+    unless getDBConn.conn
       msgbox(_("Warning"), _("You must open a database, before you can execute a SQL-script."), "warning")
       return null
     end
@@ -203,7 +193,7 @@ class AwesomeSqlAdmin::Windows::Main
 
   # Backup the current database.
   def BackupDBClicked
-    if !self.getDBConn()
+    unless getDBConn
       msgbox(_("Warning"), _("You must open a database, before you can do a backup."), "warning")
       return null
     end
@@ -213,16 +203,16 @@ class AwesomeSqlAdmin::Windows::Main
   end
 
   def getTable(ob = false)
-    return @dbpage.getTable(ob)
+    @dbpage.getTable(ob)
   end
 
   def getDB
-    return @dbpage.getDB()
+    @dbpage.getDB
   end
 
   # Rename the selected table.
   def TableRenameClicked
-    if !self.getDBConn()
+    unless getDBConn
       msgbox(_("Warning"), _("Please open a database before trying to rename a table."), "warning")
       return false
     end
@@ -237,9 +227,7 @@ class AwesomeSqlAdmin::Windows::Main
     tables.each do |table|
       # Getting the table.new-name from the user.
       tablename = knj_input(_("New table name"), _("Please enter the table.new-name:"), table[0])
-      if tablename == "cancel"
-        break
-      end
+      break if tablename == "cancel"
 
       # If he has enteret the same name.
       if strtolower(tablename) == strtolower(table[0])
@@ -248,16 +236,16 @@ class AwesomeSqlAdmin::Windows::Main
       end
 
       # Checking if the table.new-name if valid.
-      if !preg_match("/^[a-zA-Z][a-zA-Z0-9_]+/", tablename, match)
+      unless preg_match("/^[a-zA-Z][a-zA-Z0-9_]+/", tablename, match)
         msgbox(_("Warning"), _("The enteret name was not a valid table-name."), "warning")
         break
       end
 
       # Renaming table and refreshing treeviews.
       begin
-        @getDBConn().getTable(table[0]).rename(tablename)
+        getDBConn.getTable(table[0]).rename(tablename)
       rescue => e
-        knj_msgbox::error_exc(e)
+        knj_msgbox.error_exc(e)
       end
     end
 
@@ -266,13 +254,13 @@ class AwesomeSqlAdmin::Windows::Main
 
   # Edit the selected table.
   def TableEditClicked
-    if !self.getDBConn()
+    unless getDBConn
       msgbox(_("Warning"), _("Please open a database before trying to edit a table."), "warning")
       return null
     end
 
-    table = @getTable()
-    if !table
+    table = getTable
+    unless table
       msgbox(_("Warning"), _("You have to select a table to edit."), "warning")
       return null
     end
@@ -285,25 +273,23 @@ class AwesomeSqlAdmin::Windows::Main
   # Truncate the selecting table, leaving it empty.
   def TableTruncate
     begin
-      if !self.getDBConn()
-        raise _("Please open a database before trying to truncate it."))
+      unless getDBConn
+        raise _("Please open a database before trying to truncate it.")
       end
 
       tables = treeview_getSelection(@tv_tables)
-      if count(tables) <= 0
-        raise _("You have to select a table to truncate."))
-      end
+      raise _("You have to select a table to truncate.") if count(tables) <= 0
 
       # Confirm and truncate.
       tables.each do |table|
         table_ob = @dbconn.getTable(table[0])
 
         if msgbox(_("Question"), sprintf(_("Do you want to truncate the table: %s?"), table[0]), "yesno") == "yes"
-          table_ob.truncate()
+          table_ob.truncate
         end
       end
     rescue => e
-      knj_msgbox::error_exc(e)
+      knj_msgbox.error_exc(e)
     end
 
     @dbpage.TablesUpdate()
@@ -311,27 +297,25 @@ class AwesomeSqlAdmin::Windows::Main
 
   # Update the vars, which make it easier to work with the current selected database-profile.
   def updateCurrentVars
-    @tv_tables = @dbpage.get_TVTables()
-    @tv_columns = @dbpage.get_TVColumns()
-    @tv_indexes = @dbpage.get_TVIndexes()
+    @tv_tables = @dbpage.get_TVTables
+    @tv_columns = @dbpage.get_TVColumns
+    @tv_indexes = @dbpage.get_TVIndexes
   end
 
   # Add columns.new to the selected table.
   def ColumnAddClicked
-    if !self.getDBConn()
+    unless getDBConn
       msgbox(_("Warning"), _("Please open a database before trying to add a column."), "warning")
       return null
     end
 
-    table = @getTable()
-    if !table
+    table = getTable
+    unless table
       msgbox(_("Warning"), _("You have to select a table to add columns to."), "warning")
       return null
     end
 
     input = knj_input(_("Number of columns"), _("Write the number of columns, you would like to add to the table:"))
-
-
 
     if input === false
       return null
@@ -348,17 +332,17 @@ class AwesomeSqlAdmin::Windows::Main
   # Remove the selected column from the table.
   def ColumnRemoveClicked
     begin
-      if !self.getDBConn()
+      unless getDBConn
         msgbox(_("Warning"), _("Please open a database before trying to remove a column."), "warning")
         return false
       end
 
       column = treeview_getSelection(@tv_columns)
-      table = @getTable()
+      table = getTable
       table_ob = @dbconn.getTable(table[0])
       column_ob = table_ob.getColumn(column[0])
 
-      if !column
+      unless column
         msgbox(_("Warning"), _("You have not selected a column."), "warning")
         return false
       end
@@ -367,7 +351,7 @@ class AwesomeSqlAdmin::Windows::Main
         table_ob.removeColumn(column_ob)
       end
     rescue => e
-      knj_msgbox::error_exc(e)
+      knj_msgbox.error_exc(e)
     end
 
     @dbpage.TablesClicked()
@@ -375,65 +359,57 @@ class AwesomeSqlAdmin::Windows::Main
 
   # Create database.new (if the type is MySQL, PostgreSQL or whatever).
   def CreateNewDatabaseClicked
-    if !self.getDBConn()
+    unless getDBConn
       msgbox(_("Warning"), _("Please open a database-profile first."), "warning")
       return false
     end
 
-    type = @getDBConn().getType()
+    type = getDBConn.getType
     if type != "mysql" && type != "pgsql"
       msgbox(_("Warning"), sprintf(_("You cant create databases.new of af the current dbtype: %s."), type), "warning")
       return false
     end
 
     name = knj_input(_("New database name"), _("Please enter the name of the database.new-type:"))
-    if name == false
-      return false
-    end
+    return false if name == false
 
     # Create and choose the database.new.
     begin
-      @getDBConn().dbs().createDB(["name" => name))
-      db = @getDBConn().dbs().getDB(name)
-      @getDBConn().dbs().chooseDB(db)
-      @dbpage.tablesUpdate()
+      getDBConn.dbs.createDB("name" => name)
+      db = getDBConn.dbs.getDB(name)
+      getDBConn.dbs.chooseDB(db)
+      dbpage.tablesUpdate
     rescue => e
-      msgbox(_("Warning"), e.getMessage(), "warning")
+      msgbox(_("Warning"), e.getMessage, "warning")
       return false
     end
   end
 
   def dbOptimize
-    begin
-      db = @getDBConn().dbs().getCurrentDB()
-      db.optimize()
-      msgbox(_("Information"), _("The database was optimized."), "info")
-    rescue => e
-      msgbox(_("Warning"), e.getMessage(), "warning")
-    end
+    db = getDBConn.dbs.getCurrentDB
+    db.optimize
+    msgbox(_("Information"), _("The database was optimized."), "info")
+  rescue => e
+    msgbox(_("Warning"), e.getMessage, "warning")
   end
 
   # Create a table.new in the database.
   def TableCreateClicked
-    if !self.getDBConn().conn
+    unless getDBConn.conn
       msgbox(_("Warning"), _("Currently there is no active database."), "warning")
       return null
     end
 
     tablename = knj_input(_("Name"), _("Please enter the table name:"))
-    if tablename === false
-      return null
-    end
+    return null if tablename === false
 
-    if !preg_match("/^[a-zA-Z][a-zA-Z0-9_]+/", tablename, match)
+    unless preg_match("/^[a-zA-Z][a-zA-Z0-9_]+/", tablename, match)
       msgbox(_("Warning"), _("The name you chooce is not a valid table-name."), "warning")
       return null
     end
 
     columns_count = knj_input(_("Columns"), _("Please enter the number of columns you want:"))
-    if columns_count === false
-      return null
-    end
+    return null if columns_count === false
 
     require_once("gui/win_table_create.php")
     win_table_create = WinTableCreate.new(tablename, "createtable", columns_count)
@@ -441,19 +417,19 @@ class AwesomeSqlAdmin::Windows::Main
 
   # Browse the table.
   def TableBrowseClicked
-    if !self.tv_tables
+    unless tv_tables
       msgbox(_("Warning"), _("Please open a database-profile first."), "warning")
       return null
     end
 
-    table = @getTable()
+    table = getTable
     require_once("gui/win_table_browse.php")
     win_table_browse = WinTableBrowse.new(@dbpage, table[0])
   end
 
   # Drop the selected table.
   def TableDropClicked
-    if !self.tv_tables
+    unless tv_tables
       msgbox(_("Warning"), _("Please open a database-profile first."), "warning")
       return false
     end
@@ -466,7 +442,7 @@ class AwesomeSqlAdmin::Windows::Main
 
     tables.each do |table|
       if msgbox(_("Question"), sprintf(_("Are you sure you want to drop the table: %s?"), table[0]), "yesno") == "yes"
-        @getDBConn().getTable(table[0]).drop()
+        getDBConn.getTable(table[0]).drop
       end
     end
 
@@ -476,12 +452,12 @@ class AwesomeSqlAdmin::Windows::Main
   def tableOptimize
     table = getTable(true)
 
-    if !table
+    unless table
       msgbox(_("Warning"), _("Please choose a table."), "warning")
       return null
     end
 
-    table.optimize()
+    table.optimize
     msgbox(_("Information"), _("The table was optimized."), "info")
   end
 

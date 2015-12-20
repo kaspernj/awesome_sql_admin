@@ -1,20 +1,21 @@
 # This class contains the controls for the table-creating window.
 class AwesomeSqlAdmin::Windows::TableCreate
-  attr_accessor :gui, :window, :columns, :numb_columns, :columns_numkeys  # The columns with the key as count.
+  attr_accessor :gui, :window, :columns, :numb_columns, :columns_numkeys # The columns with the key as count.
 
-  attr_accessor :labels        # All the GtkLabels for the columns.
-  attr_accessor :names        # The GtkEntry's which contains the column-names.
-  attr_accessor :maxlengths      # The GtkEntry's which contains the maxlength.
-  attr_accessor :types        # The GtkComboBox's which contain the column-type.
-  attr_accessor :defaults      # The GtkEntry's which contains the column-defaults.
+  attr_accessor :labels # All the GtkLabels for the columns.
+  attr_accessor :names # The GtkEntry's which contains the column-names.
+  attr_accessor :maxlengths # The GtkEntry's which contains the maxlength.
+  attr_accessor :types # The GtkComboBox's which contain the column-type.
+  attr_accessor :defaults # The GtkEntry's which contains the column-defaults.
   attr_accessor :autoincr
   attr_accessor :prim
   attr_accessor :notnull
 
   # *The constructor of WinTableCreate. */
   def initialize(tablename, mode, numb_columns = 0)
-    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/win_table_create.glade")
-    @gui.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new
+    @gui.add("#{File.dirname(__FILE__)}/ui/win_table_create.ui")
+    @gui.connect_signals { |handler| method(handler) }
 
     @window = @gui[:window]
     winsetting = GtkSettingsWindow.new(@window, "win_table_create")
@@ -22,14 +23,14 @@ class AwesomeSqlAdmin::Windows::TableCreate
     global win_main
     @window.set_transient_for(win_main.window)
 
-    @dbconn = get_winMain().dbconn
+    @dbconn = get_winMain.dbconn
     @tablename = tablename
     @mode = mode
 
     if mode == "addcolumns"
-      columns = @dbconn.getTable(tablename).getColumns()
+      columns = @dbconn.getTable(tablename).getColumns
     elsif mode == "editcolumns"
-      columns = @dbconn.getTable(tablename).getColumns()
+      columns = @dbconn.getTable(tablename).getColumns
       numb_columns = count(columns)
     end
 
@@ -43,7 +44,7 @@ class AwesomeSqlAdmin::Windows::TableCreate
     @numb_columns = numb_columns
     temp = []
 
-    table = GtkTable.new()
+    table = GtkTable.new
     lab_name = GtkLabel.new(_("Name"))
     lab_name.set_alignment(0, 0.5)
 
@@ -76,46 +77,45 @@ class AwesomeSqlAdmin::Windows::TableCreate
     tcount = 1
     count = 0
 
-    column_types = [
-      "decimal",
-      "varchar",
-      "char",
-      "tinyint",
-      "mediumint",
-      "int",
-      "text",
-      "numeric",
-      "blob",
-      "enum",
-      "date",
-      "datetime"
-    )
+    column_types = %w(
+      decimal
+      varchar
+      char
+      tinyint
+      mediumint
+      int
+      text
+      numeric
+      blob
+      enum
+      date
+      datetime)
     sort(column_types)
-    column_types.each do |key => value|
+    column_types.each do |key, value|
       types[value] = key
     end
 
-    while(count < self.numb_columns)
-      @labels[count] = GtkLabel.new(_("Column") . " " . (count + 1))
-        @labels[count].set_alignment(0, 0.5)
+    while count < self.numb_columns
+      @labels[count] = GtkLabel.new(_("Column") + " " + (count + 1))
+      @labels[count].set_alignment(0, 0.5)
 
-      @names[count] = GtkEntry.new()
-        @names[count].set_size_request(90, -1)
+      @names[count] = GtkEntry.new
+      @names[count].set_size_request(90, -1)
 
-      @maxlengths[count] = GtkEntry.new()
-        @maxlengths[count].set_max_length(8)
-        @maxlengths[count].set_size_request(50, -1)
+      @maxlengths[count] = GtkEntry.new
+      @maxlengths[count].set_max_length(8)
+      @maxlengths[count].set_size_request(50, -1)
 
-      @types[count] = GtkComboBox::new_text()
+      @types[count] = GtkComboBox.new_text
       column_types.each do |value|
         @types[count].append_text(strtoupper(value))
       end
       @types[count].set_active(0)
 
-      @defaults[count] = GtkEntry.new()
-      @notnull[count] = GtkCheckButton.new()
-      @autoincr[count] = GtkCheckButton.new()
-      @prim[count] = GtkCheckButton.new()
+      @defaults[count] = GtkEntry.new
+      @notnull[count] = GtkCheckButton.new
+      @autoincr[count] = GtkCheckButton.new
+      @prim[count] = GtkCheckButton.new
 
       if mode == "editcolumns"
         column = @columns_numkeys[count]
@@ -125,7 +125,7 @@ class AwesomeSqlAdmin::Windows::TableCreate
         # Access cannot set a maxlength on integers and counters.
         if @dbconn.type == "access"
           if @columns_numkeys[count][type] != "int" && @columns_numkeys[count][type] != "counter"
-            @maxlengths[count].set_text(self.columns_numkeys[count]['maxlength'])
+            @maxlengths[count].set_text(columns_numkeys[count]["maxlength"])
           end
         else
           @maxlengths[count].set_text(column.get("maxlength"))
@@ -138,19 +138,17 @@ class AwesomeSqlAdmin::Windows::TableCreate
           @types[count].set_active(types[column.get("type")])
         end
 
-        if column.get("notnull") == "yes"
-          @notnull[count].clicked()
-        end
+        @notnull[count].clicked if column.get("notnull") == "yes"
 
         if column.get("primarykey") == "yes" || column.get("type") == "counter"
-          @prim[count].clicked()
+          @prim[count].clicked
         end
 
         if column.get("type") == "counter" || column.get("autoincr") == "yes"
-          @autoincr[count].clicked()
+          @autoincr[count].clicked
         end
       elsif mode == "createtable" || mode == "addcolumns"
-        @notnull[count].clicked()
+        @notnull[count].clicked
       end
 
       table.attach(@labels[count], 0, 1, tcount, tcount + 1, Gtk::FILL, Gtk::FILL)
@@ -162,28 +160,28 @@ class AwesomeSqlAdmin::Windows::TableCreate
       table.attach(@autoincr[count], 6, 7, tcount, tcount + 1, Gtk::FILL, Gtk::FILL)
       table.attach(@prim[count], 7, 8, tcount, tcount + 1, Gtk::FILL, Gtk::FILL)
 
-      tcount++
-      count++
+      tcount += 1
+      count += 1
     end
 
     @gui[:vbox_columns].pack_start(table, false, false)
-    @window.show_all()
-    table.show_all()
+    @window.show_all
+    table.show_all
   end
 
   # *Closes the window. */
   def CloseWindow
-    @window.destroy()
+    @window.destroy
   end
 
   # *Handels the event when the save-button is clicked. */
   def ButtonOkClicked
-    for(count = 0; count < @numb_columns; count++)
-      maxlength = @maxlengths[count].get_text()
-      name = @names[count].get_text()
-      type = @types[count].get_active_text()
+    @numb_columns.times do |count|
+      maxlength = @maxlengths[count].get_text
+      name = @names[count].get_text
+      type = @types[count].get_active_text
       prim = @prim[count].active
-      default = @defaults[count].get_text()
+      default = @defaults[count].get_text
       autoincr = @autoincr[count].active
       notnull = @notnull[count].active
 
@@ -225,22 +223,22 @@ class AwesomeSqlAdmin::Windows::TableCreate
 
       # Recognizable error-handeling.
       if @dbconn.type == "access" && type == "int" && maxlength
-        msgbox(_("Warning"), _("Access does not support a maxlength-value on a integer-column.\n\nPlease leave the maxlength-textfield empty on the column: '") . name . "'.", "warning")
+        msgbox(_("Warning"), _("Access does not support a maxlength-value on a integer-column.\n\nPlease leave the maxlength-textfield empty on the column: '") + name + "'.", "warning")
         return false
       end
 
       if maxlength && type != "decimal" && type != "enum" && !is_numeric(maxlength)
-        msgbox(_("Warning"), _("You have filled the maxlength-textfield with a non-numeric-value.\n\nPlease change this to an empty- or a numeric value at the column: '") . name . "'.", "warning")
+        msgbox(_("Warning"), _("You have filled the maxlength-textfield with a non-numeric-value.\n\nPlease change this to an empty- or a numeric value at the column: '") + name + "'.", "warning")
         return false
       end
 
       if prim == "yes" && type != "int"
-        msgbox(_("Warning"), _("The primary key can only be a integer at the column: '") . name . "'.", "warning")
+        msgbox(_("Warning"), _("The primary key can only be a integer at the column: '") + name + "'.", "warning")
         return false
       end
 
       if autoincr == "yes" && type != "int"
-        msgbox(_("Warning"), _("You cant set autoincrement on a varchar at the column: '") . name . "'.")
+        msgbox(_("Warning"), _("You cant set autoincrement on a varchar at the column: '") + name + "'.")
         return false
       end
       # End of the recognizable error-handeling.
@@ -252,29 +250,30 @@ class AwesomeSqlAdmin::Windows::TableCreate
         "notnull" => notnull,
         "maxlength" => maxlength,
         "default" => default
-      )
+      ]
     end
 
     begin
       if @mode == "addcolumns"
         # Running DBConn-command for adding columns.
-        @dbconn.getTable(self.tablename).addColumns(newcolumns)
+        @dbconn.getTable(tablename).addColumns(newcolumns)
       elsif @mode == "editcolumns"
         # Running DBConn-command for editing columns.
         count = 0
-        @columns.each do |key => column|
+        @columns.each do |_key, column|
           newdata = newcolumns[count]
           column.setData(newdata)
-          count++
+          count += 1
         end
       elsif @mode == "createtable"
-        get_winMain().getDBConn().tables().createTable(@tablename, newcolumns)
+        get_winMain.getDBConn.tables.createTable(@tablename, newcolumns)
       end
 
       # Update main-window and close this window.
-      get_winMain().dbpage.TablesUpdate()
-      @CloseWindow()
-    rescue TralaException eknj_msgbox::error_exc(e)
+      get_winMain.dbpage.TablesUpdate()
+      self.CloseWindow
+    rescue => e
+      knj_msgbox.error_exc(e)
     end
   end
 end

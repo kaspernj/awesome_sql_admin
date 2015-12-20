@@ -4,8 +4,9 @@ class AwesomeSqlAdmin::Windows::Profiles
 
   # The constructor.
   def initialize(win_main)
-    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/profiles.glade")
-    @gui.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new
+    @gui.add("#{File.dirname(__FILE__)}/ui/profiles.ui")
+    @gui.connect_signals { |handler| method(handler) }
 
     @window = @gui[:window]
     winsetting = GtkSettingsWindow.new(@window, "win_dbprofiles")
@@ -19,8 +20,7 @@ class AwesomeSqlAdmin::Windows::Profiles
       _("Title"),
       _("Type"),
       _("Database")
-    ]
-    )
+    ])
     @tv_profiles.get_column(0).set_visible(false)
     @tv_profiles.get_selection.set_mode(Gtk::SELECTION_MULTIPLE)
     settings_profiles = GtkSettingsTreeview.new(@tv_profiles, "dbprofiles_profiles")

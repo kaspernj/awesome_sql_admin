@@ -1,0 +1,275 @@
+<?xml version="1.0"?>
+<interface>
+  <object class="GtkUIManager" id="uimanager1">
+    <child>
+      <object class="GtkActionGroup" id="actiongroup1">
+        <child>
+          <object class="GtkAction" id="menuitem1">
+            <property name="name">menuitem1</property>
+            <property name="label" translatable="yes">Database</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="imagemenuitem1">
+            <property name="stock_id">gtk-new</property>
+            <property name="name">imagemenuitem1</property>
+            <signal handler="CreateNewDatabaseClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="imagemenuitem2">
+            <property name="stock_id">gtk-open</property>
+            <property name="name">imagemenuitem2</property>
+            <signal handler="OpenDatabaseClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem18">
+            <property name="name">menuitem18</property>
+            <property name="label" translatable="yes">Select other database</property>
+            <signal handler="SelectOtherDbClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem15">
+            <property name="name">menuitem15</property>
+            <property name="label" translatable="yes">Run SQL on database</property>
+            <signal handler="RunSQLClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="imagemenuitem4">
+            <property name="stock_id">gtk-save-as</property>
+            <property name="name">imagemenuitem4</property>
+            <signal handler="BackupDBClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem17">
+            <property name="name">menuitem17</property>
+            <property name="label" translatable="yes">Truncate table</property>
+            <signal handler="TableTruncate" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem16">
+            <property name="name">menuitem16</property>
+            <property name="label" translatable="yes">Truncate all databases</property>
+            <signal handler="TruncateAllClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem14">
+            <property name="stock_id">gtk-close</property>
+            <property name="name">menuitem14</property>
+            <signal handler="CloseDatabaseClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="imagemenuitem5">
+            <property name="stock_id">gtk-quit</property>
+            <property name="name">imagemenuitem5</property>
+            <signal handler="CloseWindow" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem2">
+            <property name="name">menuitem2</property>
+            <property name="label" translatable="yes">Table</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem3">
+            <property name="stock_id">gtk-new</property>
+            <property name="name">menuitem3</property>
+            <signal handler="TableCreateClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem4">
+            <property name="name">menuitem4</property>
+            <property name="label" translatable="yes">Edit table</property>
+            <signal handler="TableEditClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem5">
+            <property name="stock_id">gtk-delete</property>
+            <property name="name">menuitem5</property>
+            <signal handler="TableDropClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem6">
+            <property name="name">menuitem6</property>
+            <property name="label" translatable="yes">Rename table</property>
+            <signal handler="TableRenameClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem7">
+            <property name="name">menuitem7</property>
+            <property name="label" translatable="yes">Browse</property>
+            <signal handler="TableBrowseClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem8">
+            <property name="name">menuitem8</property>
+            <property name="label" translatable="yes">Column</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem9">
+            <property name="name">menuitem9</property>
+            <property name="label" translatable="yes">Add columns</property>
+            <signal handler="ColumnAddClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem10">
+            <property name="name">menuitem10</property>
+            <property name="label" translatable="yes">Remove selected columns</property>
+            <signal handler="ColumnRemoveClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem11">
+            <property name="name">menuitem11</property>
+            <property name="label" translatable="yes">Index</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem12">
+            <property name="name">menuitem12</property>
+            <property name="label" translatable="yes">Add index</property>
+            <signal handler="IndexAddClicked" name="activate"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkAction" id="menuitem13">
+            <property name="name">menuitem13</property>
+            <property name="label" translatable="yes">Drop index</property>
+            <signal handler="IndexDropClicked" name="activate"/>
+          </object>
+        </child>
+      </object>
+    </child>
+    <ui>
+      <menubar name="menubar1">
+        <menu action="menuitem1">
+          <menuitem action="imagemenuitem1"/>
+          <menuitem action="imagemenuitem2"/>
+          <menuitem action="menuitem18"/>
+          <menuitem action="menuitem15"/>
+          <menuitem action="imagemenuitem4"/>
+          <menuitem action="menuitem17"/>
+          <menuitem action="menuitem16"/>
+          <menuitem action="menuitem14"/>
+          <separator/>
+          <menuitem action="imagemenuitem5"/>
+        </menu>
+        <menu action="menuitem2">
+          <menuitem action="menuitem3"/>
+          <menuitem action="menuitem4"/>
+          <menuitem action="menuitem5"/>
+          <menuitem action="menuitem6"/>
+          <menuitem action="menuitem7"/>
+        </menu>
+        <menu action="menuitem8">
+          <menuitem action="menuitem9"/>
+          <menuitem action="menuitem10"/>
+        </menu>
+        <menu action="menuitem11">
+          <menuitem action="menuitem12"/>
+          <menuitem action="menuitem13"/>
+        </menu>
+      </menubar>
+    </ui>
+  </object>
+  <!-- interface-requires gtk+ 2.16 -->
+  <!-- interface-naming-policy toplevel-contextual -->
+  <object class="GtkWindow" id="window">
+    <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+    <property name="title" translatable="yes">knjSQLAdmin</property>
+    <property name="window_position">center</property>
+    <property name="default_width">720</property>
+    <property name="default_height">400</property>
+    <signal handler="CloseWindow" name="destroy"/>
+    <child>
+      <object class="GtkVBox" id="vbox1">
+        <property name="visible">True</property>
+        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+        <property name="spacing">4</property>
+        <child>
+          <object class="GtkVBox" id="vbox_menu">
+            <property name="visible">True</property>
+            <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+            <child>
+              <object class="GtkMenuBar" constructor="uimanager1" id="menubar1">
+                <property name="visible">True</property>
+                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkAlignment" id="alignment1">
+            <property name="visible">True</property>
+            <property name="top_padding">4</property>
+            <property name="bottom_padding">4</property>
+            <property name="left_padding">4</property>
+            <property name="right_padding">4</property>
+            <child>
+              <object class="GtkNotebook" id="nbDbs">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                <signal handler="ChangeActiveDB" name="switch_page"/>
+                <child>
+                  <object class="GtkLabel" id="label2">
+                    <property name="visible">True</property>
+                    <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                    <property name="label" translatable="yes">Welcome to knjSQLAdmin</property>
+                  </object>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel" id="label1">
+                    <property name="visible">True</property>
+                    <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+                    <property name="label" translatable="yes">(no dbs open)</property>
+                  </object>
+                  <packing>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkStatusbar" id="statusbar1">
+            <property name="visible">True</property>
+            <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
+            <property name="spacing">2</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
