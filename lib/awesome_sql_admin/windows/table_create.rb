@@ -1,11 +1,6 @@
 # This class contains the controls for the table-creating window.
-class WinTableCreate
-  attr_accessor :glade
-  attr_accessor :window
-
-  attr_accessor :columns        # The columns of the table from the database.
-  attr_accessor :numb_columns    # The total count of columns.
-  attr_accessor :columns_numkeys  # The columns with the key as count.
+class AwesomeSqlAdmin::Windows::TableCreate
+  attr_accessor :gui, :window, :columns, :numb_columns, :columns_numkeys  # The columns with the key as count.
 
   attr_accessor :labels        # All the GtkLabels for the columns.
   attr_accessor :names        # The GtkEntry's which contains the column-names.
@@ -18,11 +13,11 @@ class WinTableCreate
 
   # *The constructor of WinTableCreate. */
   def initialize(tablename, mode, numb_columns = 0)
-    @glade = new GladeXML("glades/win_table_create.glade")
-    @glade.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/win_table_create.glade")
+    @gui.signal_autoconnect_instance(self)
 
-    @window = @glade.get_widget("window")
-    winsetting = new GtkSettingsWindow(@window, "win_table_create")
+    @window = @gui[:window]
+    winsetting = GtkSettingsWindow.new(@window, "win_table_create")
 
     global win_main
     @window.set_transient_for(win_main.window)
@@ -39,35 +34,35 @@ class WinTableCreate
     end
 
     if columns
-      foreach(columns AS column)
+      columns.each do |column|
         @columns[column.data["name"]] = column
         @columns_numkeys[] = column
       end
     end
 
     @numb_columns = numb_columns
-    temp = [)
+    temp = []
 
-    table = new GtkTable()
-    lab_name = new GtkLabel(_("Name"))
+    table = GtkTable.new()
+    lab_name = GtkLabel.new(_("Name"))
     lab_name.set_alignment(0, 0.5)
 
-    lab_type = new GtkLabel(_("Type"))
+    lab_type = GtkLabel.new(_("Type"))
     lab_type.set_alignment(0, 0.5)
 
-    lab_maxlength = new GtkLabel(_("Max length"))
+    lab_maxlength = GtkLabel.new(_("Max length"))
     lab_maxlength.set_alignment(0, 0.5)
 
-    lab_default = new GtkLabel(_("Default"))
+    lab_default = GtkLabel.new(_("Default"))
     lab_default.set_alignment(0, 0.5)
 
-    lab_notnull = new GtkLabel(_("Not null"))
+    lab_notnull = GtkLabel.new(_("Not null"))
     lab_notnull.set_alignment(0, 0.5)
 
-    lab_autoincr = new GtkLabel(_("Auto inc"))
+    lab_autoincr = GtkLabel.new(_("Auto inc"))
     lab_autoincr.set_alignment(0, 0.5)
 
-    lab_prim = new GtkLabel(_("Prim key"))
+    lab_prim = GtkLabel.new(_("Prim key"))
     lab_prim.set_alignment(0, 0.5)
 
     table.attach(lab_name, 1, 2, 0, 1, Gtk::FILL, Gtk::FILL)
@@ -96,31 +91,31 @@ class WinTableCreate
       "datetime"
     )
     sort(column_types)
-    foreach(column_types AS key => value)
+    column_types.each do |key => value|
       types[value] = key
     end
 
     while(count < self.numb_columns)
-      @labels[count] = new GtkLabel(_("Column") . " " . (count + 1))
+      @labels[count] = GtkLabel.new(_("Column") . " " . (count + 1))
         @labels[count].set_alignment(0, 0.5)
 
-      @names[count] = new GtkEntry()
+      @names[count] = GtkEntry.new()
         @names[count].set_size_request(90, -1)
 
-      @maxlengths[count] = new GtkEntry()
+      @maxlengths[count] = GtkEntry.new()
         @maxlengths[count].set_max_length(8)
         @maxlengths[count].set_size_request(50, -1)
 
       @types[count] = GtkComboBox::new_text()
-      foreach(column_types AS value)
+      column_types.each do |value|
         @types[count].append_text(strtoupper(value))
       end
       @types[count].set_active(0)
 
-      @defaults[count] = new GtkEntry()
-      @notnull[count] = new GtkCheckButton()
-      @autoincr[count] = new GtkCheckButton()
-      @prim[count] = new GtkCheckButton()
+      @defaults[count] = GtkEntry.new()
+      @notnull[count] = GtkCheckButton.new()
+      @autoincr[count] = GtkCheckButton.new()
+      @prim[count] = GtkCheckButton.new()
 
       if mode == "editcolumns"
         column = @columns_numkeys[count]
@@ -171,7 +166,7 @@ class WinTableCreate
       count++
     end
 
-    @glade.get_widget("vbox_columns").pack_start(table, false, false)
+    @gui[:vbox_columns].pack_start(table, false, false)
     @window.show_all()
     table.show_all()
   end
@@ -194,7 +189,7 @@ class WinTableCreate
 
       # Checking that the column name isnt the same as an existing column.
       if mode == "addcolumns"
-        foreach(@columns AS value)
+        @columns.each do |value|
           if trim(strtolower(name)) == strtolower(value[name])
             msgbox(_("Warning"), _("A column has the same name as an existing column."), "warning")
             return false
@@ -260,14 +255,14 @@ class WinTableCreate
       )
     end
 
-    try
+    begin
       if @mode == "addcolumns"
         # Running DBConn-command for adding columns.
         @dbconn.getTable(self.tablename).addColumns(newcolumns)
       elsif @mode == "editcolumns"
         # Running DBConn-command for editing columns.
         count = 0
-        foreach(@columns AS key => column)
+        @columns.each do |key => column|
           newdata = newcolumns[count]
           column.setData(newdata)
           count++

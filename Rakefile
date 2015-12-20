@@ -17,8 +17,8 @@ Jeweler::Tasks.new do |gem|
   gem.name = "awesome_sql_admin"
   gem.homepage = "http://github.com/kaspernj/awesome_sql_admin"
   gem.license = "MIT"
-  gem.summary = %Q{TODO: one-line summary of your gem}
-  gem.description = %Q{TODO: longer description of your gem}
+  gem.summary = "An attempt at making a generic SQL database administration application"
+  gem.description = "An attempt at making a generic SQL database administration application"
   gem.email = "k@spernj.org"
   gem.authors = ["kaspernj"]
   # dependencies defined in Gemfile
@@ -48,3 +48,6 @@ Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_files.include('README*')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
+
+require "best_practice_project"
+BestPracticeProject.load_tasks

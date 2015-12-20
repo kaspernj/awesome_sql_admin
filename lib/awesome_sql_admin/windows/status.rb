@@ -1,4 +1,4 @@
-class WinStatus
+class AwesomeSqlAdmin::Windows::Status
   attr_accessor :window
   attr_accessor :progress
   attr_accessor :label
@@ -7,7 +7,7 @@ class WinStatus
   # The constructor. It builds the window.
   def initialize
     # Create window.
-    @window = new GtkWindow()
+    @window = GtkWindow.new()
     @window.set_title("Status")
     @window.set_resizable(false)
     @window.set_position(GTK_WIN_POS_CENTER)
@@ -17,16 +17,16 @@ class WinStatus
     @window.set_modal(true)
 
     # Create progressbar.
-    adj = new GtkAdjustment(0.5, 100.0, 200.0, 0.0, 0.0, 0.0)
-    @progress = new GtkProgressBar(adj)
+    adj = GtkAdjustment.new(0.5, 100.0, 200.0, 0.0, 0.0, 0.0)
+    @progress = GtkProgressBar.new(adj)
     @@progress.set_percentage(0)
 
     # Create status-label.
-    @label = new GtkLabel("Status: Waiting.")
+    @label = GtkLabel.new("Status: Waiting.")
     @label.set_alignment(0, 0.5)
 
     # Attach to window.
-    box = new GtkVBox()
+    box = GtkVBox.new()
     box.add(@label)
     box.add(@progress)
 

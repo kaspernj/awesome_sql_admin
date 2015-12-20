@@ -1,7 +1,6 @@
 # This class contains each of the notebook-pages in the main window for each db-profile which is open.
-class DBPage < GtkVBox
-  attr_accessor :dbconn          # A reference to the DBConn-object, which this class uses.
-  attr_accessor :glade          # A reference to the GladeXML-object.
+class AwesomeSqlAdmin::Windows::DatabasePage < GtkVBox
+  attr_accessor :dbconn, :gui
   attr_accessor :title          # The title of the DBPage.
   attr_accessor :id            # The ID of the DBPage.
   attr_accessor :tv_tables        # A reference to the tables-treeview.
@@ -15,15 +14,15 @@ class DBPage < GtkVBox
     @title = title
     @id = id
 
-    @glade = new GladeXML("glades/vbox_dbpage.glade")
-    @glade.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/vbox_dbpage.glade")
+    @gui.signal_autoconnect_instance(self)
 
-    vbox_dbpage = @glade.get_widget("vbox_dbpage")
+    vbox_dbpage = @gui[:vbox_dbpage]
     vbox_dbpage.unparent()
 
     @add(vbox_dbpage)
 
-    @tv_tables = @glade.get_widget("tvTables")
+    @tv_tables = @gui[:tvTables]
     @tv_tables.get_selection().set_mode(Gtk::SELECTION_MULTIPLE)
     treeview_addColumn(@tv_tables, [
         _("Title"),
@@ -34,9 +33,9 @@ class DBPage < GtkVBox
     @tv_tables.get_selection().connect("changed", [self, "TablesClicked"))
     @tv_tables.drag_source_set(Gdk::BUTTON1_MASK, [["text/plain", 0, 0)), Gdk::ACTION_COPY|Gdk::ACTION_MOVE); # Enables dragging FROM the clist.
     @tv_tables.connect("drag-data-get", [self, "drag_data_save")); # Setting the dragged data-object.
-    tables_settings = new GtkSettingsTreeview(@tv_tables, "dbpage_tables")
+    tables_settings = GtkSettingsTreeview.new(@tv_tables, "dbpage_tables")
 
-    @tv_columns = @glade.get_widget("tvColumns")
+    @tv_columns = @gui[:tvColumns]
     treeview_addColumn(@tv_columns, [
         _("Title"),
         _("Type"),
@@ -48,24 +47,24 @@ class DBPage < GtkVBox
       )
     )
     @tv_columns.get_selection().connect("changed", [get_winMain(), "ColumnsClicked"))
-    columns_settings = new GtkSettingsTreeview(@tv_columns, "dbpage_columns")
+    columns_settings = GtkSettingsTreeview.new(@tv_columns, "dbpage_columns")
 
-    paned_settings = new GtkSettingsPaned(@glade.get_widget("hpanedTablesColumns"), "dbpage_tablescolumns")
+    paned_settings = GtkSettingsPaned.new(@gui[:hpanedTablesColumns], "dbpage_tablescolumns")
 
-    @tv_indexes = @glade.get_widget("tvIndexes")
+    @tv_indexes = @gui[:tvIndexes]
     treeview_addColumn(@tv_indexes, [
         _("Title"),
         _("Columns")
       )
     )
-    index_settings = new GtkSettingsTreeview(@tv_indexes, "dbpage_indexes")
+    index_settings = GtkSettingsTreeview.new(@tv_indexes, "dbpage_indexes")
 
     @TablesUpdate(); # Fill the treeview with tables.
   end
 
   def destroy
     @dbconn.close()
-    unset(@dbconn, @tv_tables, @tv_columns, @tv_indexes, @glade)
+    unset(@dbconn, @tv_tables, @tv_columns, @tv_indexes, @gui)
     parent::destroy()
   end
 
@@ -96,7 +95,7 @@ class DBPage < GtkVBox
 
   def on_tvTables_button_press_event(selection, event)
     if event.button == 3 # Handels the right-click-event.
-      popup = new knj_popup(
+      popup = knj_popup.new(
         [
           "browse" => _("Browse"),
           "create_new" => _("Create new"),
@@ -116,9 +115,9 @@ class DBPage < GtkVBox
 
   def on_tvColumns_button_press_event(selection, event)
     if event.button == 3 # Handels the right-click-event.
-      popup = new knj_popup(
+      popup = knj_popup.new(
         [
-          "add_new" => _("Add new columns"),
+          "add_new" => _("Add columns.new"),
           "add_index" => _("Add index for this column"),
           "drop" => _("Drop column")
         ),
@@ -129,7 +128,7 @@ class DBPage < GtkVBox
 
   def on_tvIndexes_button_press_event(selection, event)
     if event.button == 3 # Handels the right-click-event.
-      popup = new knj_popup(
+      popup = knj_popup.new(
         ["drop" => _("Drop index")),
         [self, "ClistIndexRightclickmenu")
       )
@@ -184,7 +183,7 @@ class DBPage < GtkVBox
     end
   end
 
-  # Handels the event, when a new table is selected in the tables-treeview.
+  # Handels the event, when a table.new is selected in the tables-treeview.
   def tablesClicked
     @tv_columns.get_model().clear()
     @tv_indexes.get_model().clear()
@@ -198,7 +197,7 @@ class DBPage < GtkVBox
       return null
     end
 
-    foreach(table_ob.getColumns() AS column)
+    table_ob.getColumns().each do |column|
       self.tv_columns.get_model().append([
           column.get("name"),
           column.get("type"),
@@ -211,7 +210,7 @@ class DBPage < GtkVBox
       )
     end
 
-    foreach(table_ob.getIndexes() AS index)
+    table_ob.getIndexes().each do |index|
       self.tv_indexes.get_model().append([
           index.get("name"),
           index.getColText()
@@ -234,7 +233,7 @@ class DBPage < GtkVBox
     tables = @dbconn.tables().getTables()
     count = 0
     countt = count(tables)
-    foreach(tables AS key => table)
+    tables.each do |key => table|
       if win_status
         count++
         win_status.setStatus(count / countt, sprintf(_("Adding tables to list (%s)."), table.get("name")), true)

@@ -1,23 +1,23 @@
-class WinTableBrowseSearch
-  attr_accessor :glade
+class AwesomeSqlAdmin::Windows::TableBrowseSearch
+  attr_accessor :gui
   attr_accessor :win_table_browse
 
-  def initialize(WinTableBrowse win_table_browse)
-    @glade = new GladeXML("glades/win_table_browse_search.glade")
-    @glade.signal_autoconnect_instance(self)
+  def initialize(win_table_browse)
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/win_table_browse_search.glade")
+    @gui.signal_autoconnect_instance(self)
 
     @win_table_browse = win_table_browse
-    @glade.get_widget("window").set_transient_for(win_table_browse.window)
+    @gui[:window].set_transient_for(win_table_browse.window)
 
-    @glade.get_widget("window").show()
+    @gui[:window].show()
   end
 
   def closeWindow
-    if @glade && self.glade.get_widget("window")
-      @glade.get_widget("window").destroy()
+    if @gui && self.glade.get_widget("window")
+      @gui[:window].destroy()
     end
 
-    unset(@glade)
+    unset(@gui)
   end
 
   def on_btnSearch_clicked
@@ -25,13 +25,13 @@ class WinTableBrowseSearch
     model = tv.get_model()
     columns_count = count(tv.get_columns())
 
-    search = explode(" ", strtolower(@glade.get_widget("txtSearchText").get_text()))
+    search = explode(" ", strtolower(@gui[:txtSearchText].get_text()))
 
     iter_current = model.get_iter_first()
     while(iter_current)
       all_found = true
 
-      foreach(search AS text)
+      search.each do |text|
         found = false
         for(i = 0; i < columns_count; i++)
           value = strtolower(model.get_value(iter_current, i))

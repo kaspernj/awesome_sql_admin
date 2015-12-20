@@ -1,29 +1,24 @@
 # This class controls the main window.
-class WinMain
-  attr_accessor :glade          # Reference to the GladeXML()-object.
-  attr_accessor window          # Reference to the GtkWindow()-object.
+class AwesomeSqlAdmin::Windows::Main
+  attr_accessor :gui           # Reference to the GladeXML()-object.
+  attr_accessor :window          # Reference to the GtkWindow()-object.
   attr_accessor :nb_dbs          # Reference to the GtkNotebook()-object which contains the openned database-profiles.
-  attr_accessor :dbs_open_count = 0  # The count of DBPages. This is used to determine their ID's.
-  attr_accessor dbpage          # The current DBPage, which is being used.
-  attr_accessor dbconn          # The current DBConn, which is being used.
+  attr_accessor :dbs_open_count  # The count of DBPages. This is used to determine their ID's.
+  attr_accessor :dbpage          # The current DBPage, which is being used.
+  attr_accessor :dbconn          # The current DBConn, which is being used.
 
   # The constructor. This spawns the GladeXML()-object and sets some variables.
   def initialize
-    @glade = new GladeXML("glades/win_main.glade")
-    @glade.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/main.glade")
+    @gui.signal_autoconnect_instance(self)
 
-    @window = @glade.get_widget("window")
-    winsetting = new GtkSettingsWindow(@window, "win_main")
+    @window = @gui[:window]
+    winsetting = GtkSettingsWindow.new(@window, "win_main")
 
-    @nb_dbs = @glade.get_widget("nbDbs")
+    @nb_dbs = @gui[:nbDbs]
     @nb_dbs.connect_after("switch-page", [self, "ChangeActiveDB"))
 
     @window.show_all()
-  end
-
-  # Returns the current DBConn.
-  def getDBConn
-    return @dbconn
   end
 
   # Return a DBPage()-object from the ID.
@@ -32,9 +27,9 @@ class WinMain
   end
 
   def SpawnNewDB(title, newdbconn)
-    # Spawn a new page on the main GtkNotebook().
+    # Spawn a page.new on the main GtkNotebook().
     require_once("gui/class_DBPage.php")
-    dbpage = new DBPage(newdbconn, title, @dbs_open_count)
+    dbpage = DBPage.new(newdbconn, title, @dbs_open_count)
     @dbs_open[self.dbs_open_count] = dbpage
 
     # Used for dragging for identifying which dbpage the dragged element belong to.
@@ -48,7 +43,7 @@ class WinMain
 
     # Require the Notebook_Page()-class.
     require_once("gui/class_Notebook_Page.php")
-    nb_page = new WinMain_Notebook_Page(title, dbpage, self)
+    nb_page = WinMain_Notebook_Page.new(title, dbpage, self)
 
     pageid = self.nb_dbs.append_page(
       dbpage,
@@ -58,14 +53,14 @@ class WinMain
     nb_page.dbpage_id = @dbs_open_count
     dbpage.dbpage_id = @dbs_open_count
 
-    # refresh notebook. sets focus on the new page.
+    # refresh notebook. sets focus on the page.new.
     @nb_dbs.show_all()
     @nb_dbs.set_current_page(pageid)
 
     @dbs_open_count += 1
   end
 
-  # Sets the comfort-variables, when a new page has been selected.
+  # Sets the comfort-variables, when a page.new has been selected.
   def ChangeActiveDB
     @dbpage = @nb_dbs.get_nth_page(self.nb_dbs.get_current_page())
 
@@ -76,10 +71,10 @@ class WinMain
     @dbconn = @dbpage.get_DBConn()
   end
 
-  # Open a new database-profile.
+  # Open a database.new-profile.
   def OpenDatabaseClicked
     require_once("gui/win_dbprofiles.php")
-    win_dbprofiles = new WinDBProfiles(self)
+    win_dbprofiles = WinDBProfiles.new(self)
   end
 
   # Close the current database-profile.
@@ -103,18 +98,18 @@ class WinMain
       return null
     end
 
-    try
+    begin
       dbs = @getDBConn().GetDBs()
 
-      foreach(dbs AS value)
+      dbs.each do |value|
         @getDBConn().ChooseDB(value)
         tables = @getDBConn().GetTables(value)
 
-        foreach(tables AS table)
+        tables.each do |table|
           @getDBConn().TruncateTable(table["name"])
         end
       end
-    rescue Exception e
+    rescue => e
       msgbox(_("Warning"), sprintf(_("An error occurred:\n\n%s"), e.getMessage()), "warning")
     end
 
@@ -131,17 +126,17 @@ class WinMain
       args = null
     end
 
-    try
+    begin
       require_once("gui/win_databases.php")
-      win_dbs = new WinDatabases(knjdb, args)
-    rescue Exception e
+      win_dbs = WinDatabases.new(knjdb, args)
+    rescue => e
       msgbox(_("Warning"), e.getMessage(), "warning")
     end
   end
 
   # Add a index to the currently selected table and column.
   def IndexAddClicked
-    try
+    begin
       if !self.getDBConn()
         msgbox(_("Warning"), _("Please open a database before trying to add a index."), "warning")
         return null
@@ -166,14 +161,14 @@ class WinMain
 
       @dbpage.TablesClicked()
       msgbox(_("Information"), _("The index was created with a success."), "info")
-    rescue Exception e
+    rescue => e
       msgbox(_("Warning"), sprintf(_("An error occurred:\n\n%s"), e.getMessage()), "warning")
     end
   end
 
   # Drop the selected index.
   def IndexDropClicked
-    try
+    begin
       if !self.getDBConn()
         msgbox(_("Warning"), _("Please open a database before trying to drop a index."), "warning")
         return null
@@ -189,7 +184,7 @@ class WinMain
       index_ob = table.getIndexByName(index[0])
 
       table.removeIndex(index_ob)
-    rescue Exception e
+    rescue => e
       knj_msgbox::error_exc(e)
     end
 
@@ -203,7 +198,7 @@ class WinMain
     end
 
     require_once("gui/win_runsql.php")
-    win_runsql = new WinRunSQL(@dbpage)
+    win_runsql = WinRunSQL.new(@dbpage)
   end
 
   # Backup the current database.
@@ -214,7 +209,7 @@ class WinMain
     end
 
     require_once("gui/win_backup.php")
-    win_backup = new WinBackup(self)
+    win_backup = WinBackup.new(self)
   end
 
   def getTable(ob = false)
@@ -239,9 +234,9 @@ class WinMain
       return false
     end
 
-    foreach(tables AS table)
-      # Getting the new table-name from the user.
-      tablename = knj_input(_("New table name"), _("Please enter the new table-name:"), table[0])
+    tables.each do |table|
+      # Getting the table.new-name from the user.
+      tablename = knj_input(_("New table name"), _("Please enter the table.new-name:"), table[0])
       if tablename == "cancel"
         break
       end
@@ -252,16 +247,16 @@ class WinMain
         break
       end
 
-      # Checking if the new table-name if valid.
+      # Checking if the table.new-name if valid.
       if !preg_match("/^[a-zA-Z][a-zA-Z0-9_]+/", tablename, match)
         msgbox(_("Warning"), _("The enteret name was not a valid table-name."), "warning")
         break
       end
 
       # Renaming table and refreshing treeviews.
-      try
+      begin
         @getDBConn().getTable(table[0]).rename(tablename)
-      rescue Exception e
+      rescue => e
         knj_msgbox::error_exc(e)
       end
     end
@@ -284,12 +279,12 @@ class WinMain
 
     # require and show the window-class.
     require_once("gui/win_table_create.php")
-    win_table_create = new WinTableCreate(table[0], "editcolumns")
+    win_table_create = WinTableCreate.new(table[0], "editcolumns")
   end
 
   # Truncate the selecting table, leaving it empty.
   def TableTruncate
-    try
+    begin
       if !self.getDBConn()
         raise _("Please open a database before trying to truncate it."))
       end
@@ -300,14 +295,14 @@ class WinMain
       end
 
       # Confirm and truncate.
-      foreach(tables AS table)
+      tables.each do |table|
         table_ob = @dbconn.getTable(table[0])
 
         if msgbox(_("Question"), sprintf(_("Do you want to truncate the table: %s?"), table[0]), "yesno") == "yes"
           table_ob.truncate()
         end
       end
-    rescue Exception e
+    rescue => e
       knj_msgbox::error_exc(e)
     end
 
@@ -321,7 +316,7 @@ class WinMain
     @tv_indexes = @dbpage.get_TVIndexes()
   end
 
-  # Add new columns to the selected table.
+  # Add columns.new to the selected table.
   def ColumnAddClicked
     if !self.getDBConn()
       msgbox(_("Warning"), _("Please open a database before trying to add a column."), "warning")
@@ -347,12 +342,12 @@ class WinMain
 
     # require and show the window-class.
     require_once("gui/win_table_create.php")
-    win_column_add = new WinTableCreate(table[0], "addcolumns", input)
+    win_column_add = WinTableCreate.new(table[0], "addcolumns", input)
   end
 
   # Remove the selected column from the table.
   def ColumnRemoveClicked
-    try
+    begin
       if !self.getDBConn()
         msgbox(_("Warning"), _("Please open a database before trying to remove a column."), "warning")
         return false
@@ -371,14 +366,14 @@ class WinMain
       if msgbox(_("Question"), sprintf(_("Do you want to remove the selected column: %s?"), column[0]), "yesno") == "yes"
         table_ob.removeColumn(column_ob)
       end
-    rescue Exception e
+    rescue => e
       knj_msgbox::error_exc(e)
     end
 
     @dbpage.TablesClicked()
   end
 
-  # Create new database (if the type is MySQL, PostgreSQL or whatever).
+  # Create database.new (if the type is MySQL, PostgreSQL or whatever).
   def CreateNewDatabaseClicked
     if !self.getDBConn()
       msgbox(_("Warning"), _("Please open a database-profile first."), "warning")
@@ -387,38 +382,38 @@ class WinMain
 
     type = @getDBConn().getType()
     if type != "mysql" && type != "pgsql"
-      msgbox(_("Warning"), sprintf(_("You cant create new databases of af the current dbtype: %s."), type), "warning")
+      msgbox(_("Warning"), sprintf(_("You cant create databases.new of af the current dbtype: %s."), type), "warning")
       return false
     end
 
-    name = knj_input(_("New database name"), _("Please enter the name of the new database-type:"))
+    name = knj_input(_("New database name"), _("Please enter the name of the database.new-type:"))
     if name == false
       return false
     end
 
-    # Create and choose the new database.
-    try
+    # Create and choose the database.new.
+    begin
       @getDBConn().dbs().createDB(["name" => name))
       db = @getDBConn().dbs().getDB(name)
       @getDBConn().dbs().chooseDB(db)
       @dbpage.tablesUpdate()
-    rescue Exception e
+    rescue => e
       msgbox(_("Warning"), e.getMessage(), "warning")
       return false
     end
   end
 
   def dbOptimize
-    try
+    begin
       db = @getDBConn().dbs().getCurrentDB()
       db.optimize()
       msgbox(_("Information"), _("The database was optimized."), "info")
-    rescue Exception e
+    rescue => e
       msgbox(_("Warning"), e.getMessage(), "warning")
     end
   end
 
-  # Create a new table in the database.
+  # Create a table.new in the database.
   def TableCreateClicked
     if !self.getDBConn().conn
       msgbox(_("Warning"), _("Currently there is no active database."), "warning")
@@ -441,7 +436,7 @@ class WinMain
     end
 
     require_once("gui/win_table_create.php")
-    win_table_create = new WinTableCreate(tablename, "createtable", columns_count)
+    win_table_create = WinTableCreate.new(tablename, "createtable", columns_count)
   end
 
   # Browse the table.
@@ -453,7 +448,7 @@ class WinMain
 
     table = @getTable()
     require_once("gui/win_table_browse.php")
-    win_table_browse = new WinTableBrowse(@dbpage, table[0])
+    win_table_browse = WinTableBrowse.new(@dbpage, table[0])
   end
 
   # Drop the selected table.
@@ -469,7 +464,7 @@ class WinMain
       return false
     end
 
-    foreach(tables AS table)
+    tables.each do |table|
       if msgbox(_("Question"), sprintf(_("Are you sure you want to drop the table: %s?"), table[0]), "yesno") == "yes"
         @getDBConn().getTable(table[0]).drop()
       end
@@ -479,7 +474,7 @@ class WinMain
   end
 
   def tableOptimize
-    table = @getTable(true)
+    table = getTable(true)
 
     if !table
       msgbox(_("Warning"), _("Please choose a table."), "warning")
@@ -490,14 +485,9 @@ class WinMain
     msgbox(_("Information"), _("The table was optimized."), "info")
   end
 
-  def ColumnsClicked
-
-  end
-
   # Handels the event when the window is closed. Stops the main-loop and terminating the application.
   def CloseWindow
-    @window.hide()
-    gtk2_refresh()
-    Gtk::main_quit()
+    @window.hide
+    Gtk.main_quit
   end
 end

@@ -1,4 +1,4 @@
-class WinMain_Notebook_Page < GtkEventBox
+class AwesomeSqlAdmin::Windows::NotebookPage < GtkEventBox
   def initialize(title, dbpage)
     super()
 
@@ -6,7 +6,7 @@ class WinMain_Notebook_Page < GtkEventBox
     @dbconn = @dbpage.get_DBConn()
     @title = title
 
-    lab_title = new GtkLabel(title)
+    lab_title = GtkLabel.new(title)
     @connect("button-press-event", [self, "ItemClicked"))
     @add(lab_title)
     lab_title.show()
@@ -38,7 +38,7 @@ class WinMain_Notebook_Page < GtkEventBox
       dbpage = get_winMain().getDBPage(data)
       tables_sel = treeview_getSelection(dbpage.tv_tables)
       tables = [)
-      foreach(tables_sel AS table_sel)
+      tables_sel.each do |table_sel|
         tables[] = dbpage.dbconn.getTable(table_sel[0])
       end
 
@@ -46,7 +46,7 @@ class WinMain_Notebook_Page < GtkEventBox
         "dbpage" => dbpage,
         "tables" => tables
       )
-      pop = new knj_popup(
+      pop = knj_popup.new(
         [
           "copy" => _("Copy"),
           "move" => _("Move")
@@ -59,7 +59,7 @@ class WinMain_Notebook_Page < GtkEventBox
 
       @ondrop_nbpage = dbpage_dropped
 
-      pop = new knj_popup(
+      pop = knj_popup.new(
         [
           "copy_tables" => _("Copy tables to db")
         ),
@@ -70,7 +70,7 @@ class WinMain_Notebook_Page < GtkEventBox
 
   def OnDrop_nbpage(mode)
     if mode == "copy_tables"
-      win_status = new WinStatus(get_winMain())
+      win_status = WinStatus.new(get_winMain())
       win_status.SetStatus(0, _("Preparing..."))
 
       # The dbpage that we will read from.
@@ -85,18 +85,18 @@ class WinMain_Notebook_Page < GtkEventBox
       my_tables = @dbconn.GetTables()
 
       win_status.SetStatus(0, _("Copying..."))
-      foreach(tables_list AS table_data)
+      tables_list.each do |table_data|
         copy_table = true
         copy_name = table_data[name]
 
         # Checking if a table by that name already exists.
         if my_tables
-          foreach(my_tables AS my_table_d)
+          my_tables.each do |my_table_d|
             if my_table_d[name] == table_data[name]
               newname = knj_input(_("Warning"), _("The table already exists. Please enter another name for this table:"), table_data[name])
               newname = trim(newname)
 
-              foreach(my_tables AS my_table_check)
+              my_tables.each do |my_table_check|
                 if my_table_check[name] == newname
                   msgbox(_("Warning"), _("The name also exists - the table will not be copied - sorry"), "warning")
                   copy_table = false
@@ -137,7 +137,7 @@ class WinMain_Notebook_Page < GtkEventBox
 
   # The user has drag'n'dropped a table from the tables-treeview to a notebook-dbpage-button - after the popup he has choosen to copy or move it... Here we copy or move the tables, as he has whished to do.
   def OnDrop_knj_clist(mode)
-    try
+    begin
       if mode == "copy" || mode == "move"
         status_copy = _("Copying data")
         tables = @ondrop_knj_clist["tables"]
@@ -146,7 +146,7 @@ class WinMain_Notebook_Page < GtkEventBox
         # require files and show status-window.
         require_once("knjphpframework/functions_date.php")
         require_once("knjphpframework/win_status.php")
-        win_status = new WinStatus()
+        win_status = WinStatus.new()
 
 
         # get vars.
@@ -155,11 +155,11 @@ class WinMain_Notebook_Page < GtkEventBox
 
 
         # Go through each selected table.
-        foreach(tables AS table)
+        tables.each do |table|
           win_status.setStatus(0, sprintf(_("Reading columns from: %s"), table.get("name")), true)
           columns = table.getColumns()
           columns_arr = [)
-          foreach(columns AS column)
+          columns.each do |column|
             columns_arr[] = column.data
           end
 
@@ -167,7 +167,7 @@ class WinMain_Notebook_Page < GtkEventBox
           # Error-handeling - check if the table already exists.
           win_status.SetStatus(0, _("Checking if table already exists in the database."), true)
           tables_list = @dbconn.tables().getTables()
-          foreach(tables_list AS value)
+          tables_list.each do |value|
             if value.get("name") == table.get("name")
               raise sprintf(_("The table name: \"%s\", already exists in the database."), table.get("name")))
             end
@@ -193,7 +193,7 @@ class WinMain_Notebook_Page < GtkEventBox
           f_gd = dbpage.dbconn.select(table.get("name"))
           while(d_gd = f_gd.fetch())
             if conn_from_type == "knjdb_mssql" && conn_to_type == "knjdb_mysql"
-              foreach(d_gd AS col_name => row_value)
+              d_gd.each do |col_name => row_value|
                 col_ob = newtable.getColumn(col_name)
                 if col_ob.data["type"] == "datetime"
                   # convert the data to a known date-format.
@@ -220,9 +220,9 @@ class WinMain_Notebook_Page < GtkEventBox
 
 
           # Copy indexes.
-          foreach(table.getIndexes() AS index)
+          table.getIndexes().each do |index|
             cols = [)
-            foreach(index.getColumns() AS col)
+            index.getColumns().each do |col|
               cols[] = newtable.getColumn(col.get("name"))
             end
 
@@ -254,7 +254,7 @@ class WinMain_Notebook_Page < GtkEventBox
 
   def ItemClicked(widget, event)
     if event.button == 3
-      popup = new knj_popup(
+      popup = knj_popup.new(
         [
           "close" => _("Close"),
           "optimize" => _("Optimize"),
@@ -279,7 +279,7 @@ class WinMain_Notebook_Page < GtkEventBox
     elsif mode == "drop_all"
       if msgbox(_("Question"), _("Do you want to drop all the tables on this database?"), "yesno") == "yes"
         tables = get_winMain().getDBConn().tables().getTables()
-        foreach(tables AS table)
+        tables.each do |table|
           table.drop()
         end
 

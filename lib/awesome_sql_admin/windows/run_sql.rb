@@ -1,6 +1,6 @@
 # This class controls the window, where the user can import SQL-files.
-class WinRunSQL
-  attr_accessor :glade      # A reference to the GladeXML-object.
+class AwesomeSqlAdmin::Windows::RunSQL
+  attr_accessor :gui      # A reference to the GladeXML-object.
   attr_accessor :dbpage      # Reference to the DBPage-object.
   attr_accessor :dbconn      # Reference to the DBConn-object, which is used to write the data to.
   attr_accessor :window      # Reference to the GtkWindow()-object, which is used.
@@ -11,18 +11,18 @@ class WinRunSQL
     @dbpage = dbpage
     @dbconn = @dbpage.dbconn
 
-    @glade = new GladeXML("glades/win_runsql.glade")
-    @glade.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/win_runsql.glade")
+    @gui.signal_autoconnect_instance(self)
 
-    @cb_type = @glade.get_widget("cbType")
+    @cb_type = @gui[:cbType]
     combobox_init(@cb_type)
     @cb_type.get_model().append(["Auto"))
     @cb_type.get_model().append(["One-liners"))
     @cb_type.get_model().append(["phpMyAdmin dump"))
     @cb_type.set_active(0)
 
-    @window = @glade.get_widget("window")
-    winsetting = new GtkSettingsWindow(@window, "win_runsql")
+    @window = @gui[:window]
+    winsetting = GtkSettingsWindow.new(@window, "win_runsql")
     @window.show_all()
   end
 
@@ -34,7 +34,7 @@ class WinRunSQL
   # Imports the SQL-file, which the user have choosen.
   def ReadSQLClicked
     # Get variables.
-    filename = @glade.get_widget("fcbFile").get_filename()
+    filename = @gui[:fcbFile].get_filename()
     type_id = @cb_type.get_active()
 
 
@@ -106,7 +106,7 @@ class WinRunSQL
     count = 0
     cont_count = 0
     nextcount = 50
-    @win_status = new WinStatus()
+    @win_status = WinStatus.new()
     @win_status.SetStatus(0, _("Reading SQL"), true)
 
     while(!knj_freadline_eof(fp, mode))
@@ -118,9 +118,9 @@ class WinRunSQL
         elsif substr(line, -1, 1) == ";"
           newcont .= line
 
-          try
+          begin
             dbconn.query(newcont)
-          rescue Exception e
+          rescue => e
             echo newcont
             @win_status.CloseWindow()
             @dbpage.TablesUpdate()
@@ -133,9 +133,9 @@ class WinRunSQL
           newcont .= line
         end
       elsif type == "oneliners"
-        try
+        begin
           dbconn.query(line)
-        rescue Exception e
+        rescue => e
           echo line
           @win_status.CloseWindow()
           @dbpage.TablesUpdate()

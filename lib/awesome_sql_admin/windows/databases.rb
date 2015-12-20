@@ -1,13 +1,9 @@
-# This class will let the user choose a new database, if he is working in a multi-database environment (mysql, pgsql or whatever).
-class WinDatabases
-  attr_accessor :window        # A reference to the GtkWindow()-object used.
-  attr_accessor :glade        # A reference to the GladeXML-object used.
-  attr_accessor :dbconn        # A reference to the DBPage-object which is used.
-  attr_accessor :tv_dbs        # A reference to the GtkTreeview, which contains a list of the databases.
-  attr_accessor :args
+# This class will let the user choose a database.new, if he is working in a multi-database environment (mysql, pgsql or whatever).
+class AwesomeSqlAdmin::Windows::Databases
+  attr_accessor :window, :gui, :dbconn, :tv_dbs, :args
 
   # The constructor of WinDatabases.
-  def initialize(knjdb dbconn, args = null)
+  def initialize(dbconn, args = null)
     @dbconn = dbconn
     @args = args
 
@@ -15,16 +11,16 @@ class WinDatabases
       raise _("You have to open either a MySQL- or a PostgreSQL database, before choosing this option."))
     end
 
-    @glade = new GladeXML("glades/win_databases.glade")
-    @glade.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/databases.glade")
+    @gui.signal_autoconnect_instance(self)
 
-    @window = @glade.get_widget("window")
-    winsetting = new GtkSettingsWindow(@window, "win_databases")
+    @window = @gui[:window]
+    winsetting = GtkSettingsWindow.new(@window, "win_databases")
 
-    @tv_dbs = @glade.get_widget("tvDBs")
+    @tv_dbs = @gui[:tvDBs]
     treeview_addColumn(@tv_dbs, [
         _("Name")
-      )
+      ]
     )
 
     @UpdateDBList()
@@ -34,19 +30,19 @@ class WinDatabases
   # Catches press-events from the databases-treeview (doubleclicks etc).
   def on_tvDBs_button_press_event(selection, event)
     if event.type == 5
-      @ChooseDB(); # Double-click on the treeview.
+      self.ChooseDB # Double-click on the treeview.
     end
   end
 
   # Chooses the selected database.
   def ChooseDB
     require_once("knjphpframework/win_status.php")
-    win_status = new WinStatus(["window_parent" => @window))
+    win_status = WinStatus.new(["window_parent" => @window))
     win_status.setStatus(0, _("Changing database."), true)
 
     value = treeview_getSelection(@tv_dbs)
 
-    try
+    begin
       db = @dbconn.dbs().getDB(value[0])
       state = @dbconn.dbs().chooseDB(db)
       win_status.setStatus(0.5, _("Reloading tables."), true)
@@ -59,7 +55,7 @@ class WinDatabases
 
       win_status.closeWindow()
       @closeWindow()
-    rescue Exception e
+    rescue => e
       if win_status
         win_status.closeWindow()
       end
@@ -70,7 +66,7 @@ class WinDatabases
   # Reloads the list of databases.
   def UpdateDBList
     @tv_dbs.get_model().clear()
-    foreach(@dbconn.dbs().getDBs() AS db)
+    @dbconn.dbs().getDBs().each do |db|
       @tv_dbs.get_model().append([db.getName()))
     end
   end

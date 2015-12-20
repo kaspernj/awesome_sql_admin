@@ -1,7 +1,7 @@
 # This class controls the window which is able to browse and manipulate with data within a given table.
-class WinTableBrowse
+class AwesomeSqlAdmin::Windows::TableBrowse
   attr_accessor :dbconn
-  attr_accessor :glade
+  attr_accessor :gui
   public window
   public tv_rows
   public updated
@@ -18,11 +18,11 @@ class WinTableBrowse
     @dbconn = @dbpage.dbconn
     @table = table
 
-    @glade = new GladeXML("glades/win_table_browse.glade")
-    @glade.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/win_table_browse.glade")
+    @gui.signal_autoconnect_instance(self)
 
-    @window = @glade.get_widget("window")
-    winsetting = new GtkSettingsWindow(@window, "win_table_browse")
+    @window = @gui[:window]
+    winsetting = GtkSettingsWindow.new(@window, "win_table_browse")
 
     global win_main
     @window.set_transient_for(win_main.window)
@@ -42,10 +42,10 @@ class WinTableBrowse
     end
 
     # Add columns to the treeview.
-    foreach(@columns AS column)
+    @columns.each do |column|
       tvcolumns[] = column.get("name")
     end
-    @tv_rows = @glade.get_widget("tvRows")
+    @tv_rows = @gui[:tvRows]
     treeview_addColumn(@tv_rows, tvcolumns)
 
     @UpdateClist()
@@ -87,14 +87,14 @@ class WinTableBrowse
     # Think about what to tell the database.
     columns = @dbconn.getTable(self.table).getColumns()
     count = 0
-    foreach(@columns AS value)
+    @columns.each do |value|
       columns_del[value.get("name")] = selected[count]
       count++
     end
 
-    try
+    begin
       @dbconn.delete(self.table, columns_del)
-    rescue Exception e
+    rescue => e
       msgbox(_("Error"), sprintf(_("The selected row could not be deleted: %s"), e.getMessage()), "warning")
     end
 
@@ -107,12 +107,12 @@ class WinTableBrowse
 
   # *Reloads the rows-treeview. */
   def UpdateClist
-    try
+    begin
       status_countt = @dbconn.getTable(self.table).countRows()
       status_count = 0
 
       require_once("knjphpframework/win_status.php")
-      win_status = new WinStatus(["window_parent" => @window))
+      win_status = WinStatus.new(["window_parent" => @window))
       win_status.SetStatus(0, sprintf(_("Reading table rows %s."), "(" . status_count . "/" . status_countt . ")"), true)
 
       @tv_rows.get_model().clear()
@@ -121,7 +121,7 @@ class WinTableBrowse
         array = [)
         status_count++
         count = 0
-        foreach(@columns AS column)
+        @columns.each do |column|
           array[] = string_oneline(d_gc[column.get("name")])
           count++
         end
@@ -129,7 +129,7 @@ class WinTableBrowse
         @tv_rows.get_model().append(array); # Insert into the clist.
         win_status.SetStatus(status_count / status_countt, sprintf(_("Reading table rows %s."), "(" . status_count . "/" . status_countt . ")"))
       end
-    rescue Exception e
+    rescue => e
       msgbox(_("Warning"), sprintf(_("An error occurred while trying to reload the rows-treeview: %s"), e.getMessage()), "warning")
     end
 
@@ -141,7 +141,7 @@ class WinTableBrowse
   # *Handels the event, when the insert-row-button is clicked. It opens the insert-row-window. */
   def InsertIntoClicked
     require_once("gui/win_table_browse_insert.php")
-    win_table_browse_insert = new WinTableBrowseInsert(self)
+    win_table_browse_insert = WinTableBrowseInsert.new(self)
   end
 
   # *Closes and destroys the window. */
@@ -151,11 +151,11 @@ class WinTableBrowse
     end
 
     @window.destroy()
-    unset(@glade, @window, @dbconn, @dbpage, @updated, @table, @tv_rows)
+    unset(@gui, @window, @dbconn, @dbpage, @updated, @table, @tv_rows)
   end
 
   def on_btnSearch_clicked
     require_once("gui/win_table_browse_search.php")
-    win_table_browse_search = new WinTableBrowseSearch(self)
+    win_table_browse_search = WinTableBrowseSearch.new(self)
   end
 end

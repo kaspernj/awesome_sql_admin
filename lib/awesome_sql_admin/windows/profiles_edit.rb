@@ -1,6 +1,6 @@
 # This class controls the window when making and editing db-profiles.
-class WinDBProfilesEdit
-  attr_accessor :glade
+class AwesomeSqlAdmin::Windows::ProfilesEdit
+  attr_accessor :gui
   attr_accessor :window
   attr_accessor :win_dbprofile
   attr_accessor :mode
@@ -11,11 +11,11 @@ class WinDBProfilesEdit
 
   # The constructor of WinDBProfilesEdit.
   def initialize(WinDBProfiles win_dbprofile, mode = "add")
-    @glade = new GladeXML("glades/win_dbprofiles_edit.glade")
-    @glade.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/win_dbprofiles_edit.glade")
+    @gui.signal_autoconnect_instance(self)
 
-    @window = @glade.get_widget("window")
-    winsetting = new GtkSettingsWindow(@window, "win_dbprofiles_edit")
+    @window = @gui[:window]
+    winsetting = GtkSettingsWindow.new(@window, "win_dbprofiles_edit")
 
     @win_dbprofile = win_dbprofile
     @window.set_transient_for(win_dbprofile.window)
@@ -47,11 +47,11 @@ class WinDBProfilesEdit
     @types_nr[6] = "access"
 
     require_once("knjphpframework/functions_combobox.php")
-    combobox_init(@glade.get_widget("cmbType"))
-    foreach(@types AS value)
-      @glade.get_widget("cmbType").append_text(value)
+    combobox_init(@gui[:cmbType])
+    @types.each do |value|
+      @gui[:cmbType].append_text(value)
     end
-    @glade.get_widget("cmbType").set_active(0)
+    @gui[:cmbType].set_active(0)
 
     if @mode == "edit"
       # NOTE: Remember that the tv_profiles is in multiple mode, so it is possible to open more than one database at a time. This affects the returned array from treeview_getSelection().
@@ -59,16 +59,16 @@ class WinDBProfilesEdit
       @edit_data = get_myDB().selectsingle("profiles", ["nr" => editvalue[0][0]))
 
       if file_exists(self.edit_data[location])
-        @glade.get_widget("fcbLocation")  ->set_filename(self.edit_data[location])
+        @gui[:fcbLocation]  ->set_filename(self.edit_data[location])
       end
 
-      @glade.get_widget("texIP")      ->set_text(self.edit_data[location])
-      @glade.get_widget("texTitle")    ->set_text(self.edit_data[title])
-      @glade.get_widget("texUsername")  ->set_text(self.edit_data[username])
-      @glade.get_widget("texPassword")  ->set_text(self.edit_data[password])
-      @glade.get_widget("texDatabase")  ->set_text(self.edit_data[database])
-      @glade.get_widget("texPort")      ->set_text(self.edit_data[port])
-      @glade.get_widget("cmbType")      ->set_active(self.types_text[self.edit_data[type]])
+      @gui[:texIP]      ->set_text(self.edit_data[location])
+      @gui[:texTitle]    ->set_text(self.edit_data[title])
+      @gui[:texUsername]  ->set_text(self.edit_data[username])
+      @gui[:texPassword]  ->set_text(self.edit_data[password])
+      @gui[:texDatabase]  ->set_text(self.edit_data[database])
+      @gui[:texPort]      ->set_text(self.edit_data[port])
+      @gui[:cmbType]      ->set_active(self.types_text[self.edit_data[type]])
     end
 
     @window.show_all()
@@ -79,51 +79,51 @@ class WinDBProfilesEdit
   def validateType
     active = @types_nr[self.glade.get_widget("cmbType").get_active()]
     if active == "mysql" || active == "postgresql" || active == "mysqli" || active == "mssql"
-      @glade.get_widget("texIP").show()
-      @glade.get_widget("texUsername").show()
-      @glade.get_widget("texPassword").show()
-      @glade.get_widget("texPort").show()
-      @glade.get_widget("texDatabase").show()
+      @gui[:texIP].show()
+      @gui[:texUsername].show()
+      @gui[:texPassword].show()
+      @gui[:texPort].show()
+      @gui[:texDatabase].show()
 
-      @glade.get_widget("labIP").show()
-      @glade.get_widget("labUsername").show()
-      @glade.get_widget("labPassword").show()
-      @glade.get_widget("labPort").show()
-      @glade.get_widget("labDatabase").show()
+      @gui[:labIP].show()
+      @gui[:labUsername].show()
+      @gui[:labPassword].show()
+      @gui[:labPort].show()
+      @gui[:labDatabase].show()
 
-      @glade.get_widget("fcbLocation").hide()
-      @glade.get_widget("labLocation").hide()
-      @glade.get_widget("btnNewFile").hide()
+      @gui[:fcbLocation].hide()
+      @gui[:labLocation].hide()
+      @gui[:btnNewFile].hide()
     elsif active == "sqlite" || active == "access" || active == "sqlite3"
-      @glade.get_widget("texIP").hide()
-      @glade.get_widget("texUsername").hide()
-      @glade.get_widget("texPassword").hide()
-      @glade.get_widget("texPort").hide()
-      @glade.get_widget("texDatabase").hide()
+      @gui[:texIP].hide()
+      @gui[:texUsername].hide()
+      @gui[:texPassword].hide()
+      @gui[:texPort].hide()
+      @gui[:texDatabase].hide()
 
-      @glade.get_widget("labIP").hide()
-      @glade.get_widget("labUsername").hide()
-      @glade.get_widget("labPassword").hide()
-      @glade.get_widget("labPort").hide()
-      @glade.get_widget("labDatabase").hide()
+      @gui[:labIP].hide()
+      @gui[:labUsername].hide()
+      @gui[:labPassword].hide()
+      @gui[:labPort].hide()
+      @gui[:labDatabase].hide()
 
-      @glade.get_widget("fcbLocation").show()
-      @glade.get_widget("labLocation").show()
-      @glade.get_widget("btnNewFile").show()
+      @gui[:fcbLocation].show()
+      @gui[:labLocation].show()
+      @gui[:btnNewFile].show()
     end
   end
 
   # Saves the database-profile and closes the window.
   def SaveClicked
     nr =      @edit_data[nr]
-    title =    @glade.get_widget("texTitle").get_text()
+    title =    @gui[:texTitle].get_text()
     type =    @types_nr[self.glade.get_widget("cmbType").get_active()]
-    port =    @glade.get_widget("texPort").get_text()
-    location =  @glade.get_widget("fcbLocation").get_filename()
-    ip =     @glade.get_widget("texIP").get_text()
-    username =  @glade.get_widget("texUsername").get_text()
-    password =  @glade.get_widget("texPassword").get_text()
-    db =      @glade.get_widget("texDatabase").get_text()
+    port =    @gui[:texPort].get_text()
+    location =  @gui[:fcbLocation].get_filename()
+    ip =     @gui[:texIP].get_text()
+    username =  @gui[:texUsername].get_text()
+    password =  @gui[:texPassword].get_text()
+    db =      @gui[:texDatabase].get_text()
 
     if type == "mysql" || type == "mysqli"|| type == "postgresql" || type == "mssql"
       location = ip
@@ -160,15 +160,15 @@ class WinDBProfilesEdit
   # Closes the window.
   def closeWindow
     @window.destroy()
-    unset(@glade, @window, @win_dbprofile); # Clean memory.
+    unset(@gui, @window, @win_dbprofile); # Clean memory.
   end
 
-  # Creates a new database-file (just an empty file actually).
+  # Creates a database.new-file (just an empty file actually).
   def on_btnNewFile_clicked
     filename = dialog_saveFile::newDialog()
     if filename
       file_put_contents(filename, "")
-      @glade.get_widget("fcbLocation").set_filename(filename)
+      @gui[:fcbLocation].set_filename(filename)
     end
   end
 end

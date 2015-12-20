@@ -1,55 +1,52 @@
 # This class contains the window when showing the different kind of db-profiles.
-class WinDBProfiles
-  attr_accessor :glade
-  public window
-  attr_accessor :win_main
-  public tv_profiles
+class AwesomeSqlAdmin::Windows::Profiles
+  attr_accessor :gui, :window, :win_main, :tv_profiles
 
   # The constructor.
   def initialize(win_main)
-    @glade = new GladeXML("glades/win_dbprofiles_open.glade")
-    @glade.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/profiles.glade")
+    @gui.signal_autoconnect_instance(self)
 
-    @window = @glade.get_widget("window")
-    winsetting = new GtkSettingsWindow(@window, "win_dbprofiles")
+    @window = @gui[:window]
+    winsetting = GtkSettingsWindow.new(@window, "win_dbprofiles")
 
     @win_main = win_main
     @window.set_transient_for(self.win_main.window)
 
-    @tv_profiles = @glade.get_widget("tvDBProfiles")
+    @tv_profiles = @gui[:tvDBProfiles]
     treeview_addColumn(@tv_profiles, [
         "ID",
         _("Title"),
         _("Type"),
         _("Database")
-      )
+      ]
     )
     @tv_profiles.get_column(0).set_visible(false)
     @tv_profiles.get_selection().set_mode(Gtk::SELECTION_MULTIPLE)
-    settings_profiles = new GtkSettingsTreeview(@tv_profiles, "dbprofiles_profiles")
+    settings_profiles = GtkSettingsTreeview.new(@tv_profiles, "dbprofiles_profiles")
 
-    @UpdateCList()
-    @window.show_all()
+    self.UpdateCList
+    @window.show_all
   end
 
   # Handels the event when the enter-key is pressed while the treeview has focus (runs the connect-event).
   def on_tvDBProfiles_key_press_event(widget, event)
     if event.keyval == Gdk::KEY_Return || event.keyval == Gdk::KEY_KP_Enter
-      @ConnectClicked()
+      self.ConnectClicked
     end
   end
 
   # Updates the treeview with profiles.
   def UpdateCList
     @tv_profiles.get_model().clear()
-    f_gp = get_MyDB().select("profiles", null, ["orderby" => "title"))
+    f_gp = get_MyDB().select("profiles", null, ["orderby" => "title"])
     while(d_gp = f_gp.fetch())
       self.tv_profiles.get_model().append([
           d_gp["nr"],
           d_gp["title"],
           d_gp["type"],
           d_gp["database"]
-        )
+        ]
       )
     end
   end
@@ -57,43 +54,40 @@ class WinDBProfiles
   # Handels the event, when a button-press-event has been initialized on the treeview-object.
   def on_tvDBProfiles_button_press_event(selection, event)
     if event.type == 5 # Double-clicked.
-      @ConnectClicked()
+      self.ConnectClicked
     end
   end
 
   # Handels the event when the connect-button is clicked.
   def ConnectClicked
     profiles = treeview_getSelection(@tv_profiles)
-    if !profiles
-      return null
-    end
+    return null if !profiles
 
     # Show a status-window for opening the database.
-    require_once("knjphpframework/win_status.php")
-    win_status = new WinStatus(["window_parent" => @window))
+    win_status = WinStatus.new(["window_parent" => @window])
 
-    try
-      foreach(profiles AS value)
-        d_gd = get_MyDB().selectsingle("profiles", ["nr" => value[0]))
+    begin
+      profiles.each do |value|
+        d_gd = get_MyDB().selectsingle("profiles", ["nr" => value[0]])
         if !d_gd
           msgbox(_("Warning"), sprintf(_("Could not find the database-profile for: %s."), value[1]), "warning")
           return null
         end
 
         win_status.SetStatus(0, sprintf(_("Opening database: %s."), d_gd["title"]), true)
-        @openProfile(d_gd)
+        self.openProfile(d_gd)
       end
 
       win_status.CloseWindow()
-      @CloseWindow()
-    rescue Exception e
+      self.CloseWindow
+    rescue => e
       win_status.CloseWindow()
-      knj_msgbox::error_exc(e)
+      knj_msgbox.error_exc(e)
     end
   end
 
   def openProfile(d_gd)
-    try
+    begin
       # Open the database.
       if d_gd["type"] == "mysql" || d_gd["type"] == "mysqli" || d_gd["type"] == "pgsql" || d_gd["type"] == "mssql"
         load_arr = [
@@ -103,7 +97,7 @@ class WinDBProfiles
           "user" => d_gd["username"],
           "pass" => d_gd["password"],
           "port" => d_gd["port"]
-        )
+        ]
 
         if !load_arr["db"]
           load_db_window = true
@@ -115,12 +109,12 @@ class WinDBProfiles
             fp = fopen(d_gd["location"], "w")
 
             if !fp
-              raise _("The database could not be created."))
+              raise _("The database could not be created.")
             end
 
             fclose(fp)
           else
-            raise sprintf(_("The file could not be found - aborting.\n\n%s"), d_gd["location"]))
+            raise sprintf(_("The file could not be found - aborting.\n\n%s"), d_gd["location"])
           end
         end
 
@@ -136,40 +130,41 @@ class WinDBProfiles
           "type" => type,
           "dbtype" => dbtype,
           "path" => d_gd["location"]
-        )
+        ]
       elsif d_gd["type"] == "access"
         if !file_exists(d_gd["location"])
           if msgbox(_("Warning"), d_gd["location"] . _(" does not exist. Do you want to create an empty Access database?"), "yesno") == "yes"
             copy("Data/Access/empty.mdb", d_gd["location"])
           else
-            raise sprintf(_("The file \"%s\" could not be found - aborting.", d_gd["location"])))
+            raise sprintf(_("The file \"%s\" could not be found - aborting.", d_gd["location"]))
           end
         end
 
         load_arr = [
           "type" => "access",
           "location" => d_gd["location"]
-        )
+        ]
       else
-        raise _("The database-type wasnt given - aborting."))
+        raise _("The database-type wasnt given - aborting.")
       end
 
-      newdbconn = new knjdb()
+      newdbconn = knjdb.new()
       newdbconn.setOpts(load_arr)
 
       if load_db_window
-        @win_main.SelectOtherDbClicked(newdbconn, ["opennewdbconn" => true, "dbpage_title" => d_gd["title"]))
+        @win_main.SelectOtherDbClicked(newdbconn, ["opennewdbconn" => true, "dbpage_title" => d_gd["title"]])
       else
         spawnid = @win_main.SpawnNewDB(d_gd["title"], newdbconn)
       end
-    rescue Exception emsgbox(_("Warning"), e.getMessage(), "warning")
+    rescue => e
+      msgbox(_("Warning"), e.getMessage(), "warning")
     end
   end
 
   # Handels the event, when the add-button has been clicked.
   def AddClicked
     require_once("win_dbprofiles_edit.php")
-    win_dbprofile_edit = new WinDBProfilesEdit(self, "add")
+    win_dbprofile_edit = WinDBProfilesEdit.new(self, "add")
   end
 
   # Handels the event, when the edit-button has been clicked.
@@ -182,7 +177,7 @@ class WinDBProfiles
       return null
     end
 
-    win_dbprofile_edit = new WinDBProfilesEdit(self, "edit")
+    win_dbprofile_edit = WinDBProfilesEdit.new(self, "edit")
   end
 
   # Handels the event, when the delete-button has been clicked.
@@ -193,13 +188,13 @@ class WinDBProfiles
       return null
     end
 
-    foreach(profiles AS value)
+    profiles.each do |value|
       if msgbox(_("Question"), sprintf(_("Do you want to delete the chossen profile: %s?"), value[1]), "yesno") == "yes"
-        get_MyDB().delete("profiles", ["nr" => value[0]))
+        get_MyDB().delete("profiles", {"nr" => value[0]})
       end
     end
 
-    @UpdateCList()
+    self.UpdateCList
   end
 
   # Closes the window.
@@ -207,6 +202,6 @@ class WinDBProfiles
     @window.hide()
     gtk2_refresh()
     @window.destroy()
-    unset(@window, @glade, @tv_profiles, @win_main); # clean memory.
+    unset(@window, @gui, @tv_profiles, @win_main); # clean memory.
   end
 end

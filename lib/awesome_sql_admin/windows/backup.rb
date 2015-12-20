@@ -1,6 +1,6 @@
 # The class controls the backup-window and the execution of the functions in it
-class WinBackup
-  attr_accessor :glade
+class AwesomeSqlAdmin::Windows::WinBackup
+  attr_accessor :gui
   attr_accessor :window
   attr_accessor :dbconn
   attr_accessor :tv_tables
@@ -8,34 +8,34 @@ class WinBackup
 
   # The constructor of WinBackup.
   def initialize(win_main)
-    @glade = new GladeXML("glades/win_dbexport.glade")
-    @glade.signal_autoconnect_instance(self)
-    @window = @glade.get_widget("window")
-    winsetting = new GtkSettingsWindow(@window, "win_backup")
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/win_dbexport.glade")
+    @gui.signal_autoconnect_instance(self)
+    @window = @gui[:window]
+    winsetting = GtkSettingsWindow.new(@window, "win_backup")
 
     @win_main = win_main
     @dbconn = win_main.dbconn
 
-    @tv_tables = @glade.get_widget("tvTables")
+    @tv_tables = @gui[:tvTables]
     @tv_tables.get_selection().set_mode(Gtk::SELECTION_MULTIPLE)
     treeview_addColumn(@tv_tables, [_("Tablename")])
 
     tables = @dbconn.tables().getTables()
-    foreach(tables AS table)
+    tables.each do |table|
       @tv_tables.get_model().append([table.get("name")])
     end
 
     require_once("knjphpframework/functions_combobox.php")
-    combobox_init(@glade.get_widget("comFormat"))
-    @glade.get_widget("comFormat").append_text("MySQL")
-    @glade.get_widget("comFormat").append_text("PostgreSQL")
-    @glade.get_widget("comFormat").append_text("SQLite2")
-    @glade.get_widget("comFormat").append_text("SQLite3")
-    @glade.get_widget("comFormat").append_text("MS-SQL")
-    @glade.get_widget("comFormat").append_text("Access")
-    @glade.get_widget("comFormat").set_active(0)
+    combobox_init(@gui[:comFormat])
+    @gui[:comFormat].append_text("MySQL")
+    @gui[:comFormat].append_text("PostgreSQL")
+    @gui[:comFormat].append_text("SQLite2")
+    @gui[:comFormat].append_text("SQLite3")
+    @gui[:comFormat].append_text("MS-SQL")
+    @gui[:comFormat].append_text("Access")
+    @gui[:comFormat].set_active(0)
 
-    @window.show_all()
+    @window.show_all
   end
 
   # Shows the window where you can choose to save the file.
@@ -56,11 +56,11 @@ class WinBackup
 
   # Export the choosen tables to the choosen file and closes the window.
   def ExportToFile(filename)
-    win_status = new WinStatus(["window_parent" => @window))
+    win_status = WinStatus.new(["window_parent" => @window))
     win_status.SetStatus(0, _("Preparing the backup-process..."), true)
 
     # Get the format.
-    format = @glade.get_widget("comFormat").get_active_text()
+    format = @gui[:comFormat].get_active_text()
     if format == "MySQL"
       format = "mysql"
     elsif format == "PostgreSQL"
@@ -77,27 +77,21 @@ class WinBackup
     end
 
     # Create helper objects.
-    require_once("knjphpframework/knjdb/drivers/" . format . "/class_knjdb_" . format . "_rows.php")
-    require_once("knjphpframework/knjdb/drivers/" . format . "/class_knjdb_" . format . "_tables.php")
-    require_once("knjphpframework/knjdb/drivers/" . format . "/class_knjdb_" . format . "_indexes.php")
-    ob1 = "knjdb_" . format . "_rows"
-    ob2 = "knjdb_" . format . "_tables"
-    ob3 = "knjdb_" . format . "_indexes"
-    ob_rows = new ob1(@dbconn)
-    ob_tables = new ob2(@dbconn)
-    ob_indexes = new ob3(@dbconn)
+    ob_rows = ob.new1(@dbconn)
+    ob_tables = ob.new2(@dbconn)
+    ob_indexes = ob.new3(@dbconn)
 
     # Validate if we should open and read a gz-file or a plaintext sql-file.
     if self.glade.get_widget("chkGZIP").active
       if strtolower(substr(filename, -7, 7)) != ".sql.gz"
-        filename .= ".sql.gz"
+        filename << ".sql.gz"
       end
 
       mode = "gz"
       fp = gzopen(filename, "w9")
     else
       if strtolower(substr(filename, -4, 4)) != ".sql"
-        filename .= ".sql"
+        filename << ".sql"
       end
 
       mode = "plain"
@@ -123,14 +117,14 @@ class WinBackup
 
     # Validating which tables should be backed up.
     values = treeview_getSelection(@tv_tables)
-    foreach(values AS value)
+    values.each do |value|
       tables_back[value[0]] = true
     end
 
     # Counting how many SQL-lines should be wrote as "points" (to make a status of the operation).
     count_points = 0
     countt_points = count(tables)
-    foreach(tables AS tha_table)
+    tables.each do |tha_table|
       if tables_back[tha_table.get("name")]
         win_status.SetStatus(0, _("Counting") . " (" . tha_table.get("name") . ")...", true)
 
@@ -144,21 +138,21 @@ class WinBackup
     # Backup of the database-structure (tables etc.)
     win_status.SetStatus(0, _("Executing backup") . " (0/" . count_points . ")", true)
     if struc == true
-      foreach(tables AS tha_table)
+      tables.each do |tha_table|
         if tables_back[tha_table.get("name")]
           # Making SQL for the structure.
           columns = tha_table.getColumns()
           indexes = tha_table.getIndexes()
 
           colarr = [)
-          foreach(columns AS col)
+          columns.each do |col|
             colarr[] = col.data
           end
 
           sql .= ob_tables.createTable(tha_table.get("name"), colarr, ["returnsql" => true)) . "\n"
 
           if indexes
-            foreach(indexes AS index)
+            indexes.each do |index|
               sql .= ob_indexes.addIndex(tha_table, index.getColumns(), null, ["returnsql" => true)) . "\n"
             end
           end
@@ -175,7 +169,7 @@ class WinBackup
 
     # Backup of the data (inserts).
     if data == true
-      foreach(tables AS tha_table)
+      tables.each do |tha_table|
         if tables_back[tha_table.get("name")]
           columns = tha_table.getColumns()
           win_status.SetStatus(perc, _("Executing backup") . " (" . count_points . "/" . countt_points . ") (Querying " . tha_table.get("name") . "...).", true)
@@ -222,6 +216,6 @@ class WinBackup
 
   # Closes the window.
   def CloseWindow
-    @window.destroy()
+    @window.destroy
   end
 end

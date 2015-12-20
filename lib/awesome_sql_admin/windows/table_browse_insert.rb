@@ -1,5 +1,5 @@
-class WinTableBrowseInsert
-  attr_accessor :glade
+class AwesomeSqlAdmin::Windows::TableBrowseInsert
+  attr_accessor :gui
   attr_accessor :dbconn
   attr_accessor :dbpage
   attr_accessor :window
@@ -10,26 +10,26 @@ class WinTableBrowseInsert
   attr_accessor :entries
 
   def initialize(win_table_browse)
-    @glade = new GladeXML("glades/win_table_browse_insert.glade")
-    @glade.signal_autoconnect_instance(self)
+    @gui = Gtk::Builder.new.add("#{File.dirname(__FILE__)}/ui/win_table_browse_insert.glade")
+    @gui.signal_autoconnect_instance(self)
 
     @win_table_browse = win_table_browse
     @dbpage = @win_table_browse.dbpage
     @dbconn = @dbpage.dbconn
     @table = @win_table_browse.table
 
-    @window = @glade.get_widget("window")
-    winsetting = new GtkSettingsWindow(@window, "win_table_browse_insert")
+    @window = @gui[:window]
+    winsetting = GtkSettingsWindow.new(@window, "win_table_browse_insert")
 
-    table = new GtkTable()
+    table = GtkTable.new()
     @columns = @dbconn.getTable(self.table).getColumns()
 
     count_rows = 0
-    foreach(@columns AS value)
-      @labels[count_rows] = new GtkLabel(value.get("name"))
+    @columns.each do|value|
+      @labels[count_rows] = GtkLabel.new(value.get("name"))
       @labels[count_rows].set_alignment(0, 0.5)
 
-      @entries[count_rows] = new GtkEntry()
+      @entries[count_rows] = GtkEntry.new()
 
       table.attach(@labels[count_rows], 0, 1, count_rows, count_rows + 1, Gtk::FILL, Gtk::FILL)
       table.attach(@entries[count_rows], 1, 2, count_rows, count_rows + 1)
@@ -38,14 +38,14 @@ class WinTableBrowseInsert
     end
 
     @window.show_all()
-    @glade.get_widget("vbox_data").pack_start(table, false, false)
+    @gui[:vbox_data].pack_start(table, false, false)
     table.show_all()
   end
 
   def ButtonOkClicked
-    try
+    begin
       count = 0
-      foreach(@columns AS key => value)
+      @columns.each do |key => value|
         insert_val = @entries[count].get_text()
 
         if insert_val == "" && value.get("notnull") == "yes" && value.get("primarykey") != "yes" && value.get("default") == ""
@@ -63,7 +63,7 @@ class WinTableBrowseInsert
       @win_table_browse.UpdateClist()
       @win_table_browse.updated = true
       @CloseWindow()
-    rescue Exception e
+    rescue => e
       msgbox(_("Warning"), e.getMessage(), "warning")
     end
   end
