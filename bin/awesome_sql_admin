@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require "#{File.dirname(__FILE__)}/../lib/awesome_sql_admin"
+require_relative "../lib/awesome_sql_admin"
 AwesomeSqlAdmin.new
 
 Gtk.main

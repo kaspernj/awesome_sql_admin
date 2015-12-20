@@ -3,13 +3,16 @@ class AwesomeSqlAdmin::Windows::Profiles
   attr_accessor :gui, :window, :win_main, :tv_profiles
 
   # The constructor.
-  def initialize(win_main)
+  def initialize(args)
+    @awesome_sql_admin = args.fetch(:awesome_sql_admin)
+    @db = @awesome_sql_admin.db
+
     @gui = Gtk::Builder.new
     @gui.add("#{File.dirname(__FILE__)}/ui/profiles.ui")
     @gui.connect_signals { |handler| method(handler) }
 
     @window = @gui[:window]
-    winsetting = GtkSettingsWindow.new(@window, "win_dbprofiles")
+    Gtk2_window_settings.new(db: @db, window: @window, name: "win_dbprofiles")
 
     @win_main = win_main
     @window.set_transient_for(self.win_main.window)

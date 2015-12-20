@@ -1,9 +1,11 @@
 require "baza"
 require "string-cases"
+require "knjrbfw"
 
 class AwesomeSqlAdmin
-  path = "#{File.dirname(__FILE__)}/awesome_sql_admin"
+  attr_reader :db
 
+  path = "#{File.dirname(__FILE__)}/awesome_sql_admin"
   autoload :Windows, "#{path}/windows"
 
   def initialize(_args = {})

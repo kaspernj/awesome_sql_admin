@@ -3,6 +3,10 @@ source "http://rubygems.org"
 gem "gtk3", "3.0.7"
 gem "baza", "0.0.19"
 gem "string-cases", "0.0.1"
+gem "gtk2_window_settings", github: "kaspernj/gtk2_window_settings"
+gem "sqlite3", "1.3.11"
+gem "mysql2", "0.4.2"
+gem "knjrbfw", "0.0.113"
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
